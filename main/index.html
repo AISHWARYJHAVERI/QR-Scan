@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Advanced QR Scanner Dashboard</title>
+    <!-- Modern Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+
+<div class="menu-overlay" id="menu-overlay"></div>
+
+<div class="container">
+    <!-- Header Section -->
+    <header>
+        <h1>
+            <i data-lucide="zap" class="icon gradient-text" style="width: 2.5rem; height: 2.5rem; margin-right: 0;"></i>
+            <span class="gradient-text">QR Scanner Dashboard</span>
+        </h1>
+        <p>Premium realtime scanning powered by modern Web Standards</p>
+
+        <!-- "Three Dots" Menu Trigger -->
+        <div class="menu-container">
+            <button class="menu-trigger" id="menu-trigger-btn" aria-label="Open navigation menu">
+                <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+            </button>
+            <div class="menu-dropdown" id="menu-dropdown-popover">
+                <div class="menu-item active" data-target="dashboard-section">
+                    <i data-lucide="camera" style="width: 16px; height: 16px;"></i> Scanner
+                </div>
+                <div class="menu-item" data-target="about-section">
+                    <i data-lucide="info" style="width: 16px; height: 16px;"></i> About
+                </div>
+                <div class="menu-item" data-target="features-section">
+                    <i data-lucide="sliders" style="width: 16px; height: 16px;"></i> Features
+                </div>
+                <div class="menu-item" data-target="solutions-section">
+                    <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> How it Works
+                </div>
+                <div class="menu-item" id="analytics-menu-item" data-target="analytics-section" style="display:none;">
+                    <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i> Analytics
+                </div>
+                <div class="menu-item" id="admin-menu-item" data-target="admin-section" style="display:none;">
+                    <i data-lucide="shield" style="width: 16px; height: 16px;"></i> Admin Panel
+                </div>
+                <div class="menu-item" data-target="developer-section">
+                    <i data-lucide="user" style="width: 16px; height: 16px;"></i> Developer
+                </div>
+                <div class="menu-item" data-target="contact-section">
+                    <i data-lucide="mail" style="width: 16px; height: 16px;"></i> Contact
+                </div>
+            </div>
+        </div>
+
+        <!-- Auth Button (right side) -->
+        <div class="auth-header-btn" id="auth-header-btn">
+            <button class="auth-btn auth-btn-login" id="login-btn">
+                <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
+                <span>Login</span>
+            </button>
+            <div id="logged-in-info" style="display:none; align-items: center; gap: 0.75rem;">
+                <span class="auth-user-name" id="auth-user-name"></span>
+                <button class="auth-btn auth-btn-logout" id="logout-btn">
+                    <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== Auth Modal (Login / Register) ===== -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-card">
+            <button class="close-modal" id="close-login-modal">&times;</button>
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login">Login</button>
+                <button class="auth-tab" id="tab-register">Register</button>
+            </div>
+            <!-- Login Form -->
+            <div id="login-form-container">
+                <h2 class="gradient-text">Welcome Back</h2>
+                <p class="modal-subtitle">Login to your account</p>
+                <form class="modal-form" id="login-form">
+                    <div class="modal-error" id="login-error">
+                        <i data-lucide="alert-triangle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+                        <span id="login-error-text"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input id="login-email" type="email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <div class="password-wrapper">
+                            <input id="login-password" type="password" placeholder="Enter password" required>
+                            <button type="button" class="password-toggle" data-target="login-password" tabindex="-1" aria-label="Show password">
+                                <i data-lucide="eye" class="password-toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="login-submit-btn">Login</button>
+                </form>
+            </div>
+            <!-- Register Form -->
+            <div id="register-form-container" style="display:none;">
+                <h2 class="gradient-text">Create Account</h2>
+                <p class="modal-subtitle">Register a new account</p>
+                <form class="modal-form" id="register-form">
+                    <div class="modal-error" id="register-error">
+                        <i data-lucide="alert-triangle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+                        <span id="register-error-text"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input id="register-username" type="text" placeholder="Choose a username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input id="register-email" type="email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <div class="password-wrapper">
+                            <input id="register-password" type="password" placeholder="Choose a password" required>
+                            <button type="button" class="password-toggle" data-target="register-password" tabindex="-1" aria-label="Show password">
+                                <i data-lucide="eye" class="password-toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm">Confirm Password</label>
+                        <div class="password-wrapper">
+                            <input id="register-confirm" type="password" placeholder="Confirm your password" required>
+                            <button type="button" class="password-toggle" data-target="register-confirm" tabindex="-1" aria-label="Show password">
+                                <i data-lucide="eye" class="password-toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="register-submit-btn">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast Notification Container ===== -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ===== Change Password Modal ===== -->
+    <div class="modal-overlay" id="change-password-modal">
+        <div class="modal-card" style="max-width: 400px;">
+            <button class="close-modal" id="close-change-password-modal">&times;</button>
+            <h2 class="gradient-text">Change Password</h2>
+            <p class="modal-subtitle">Update your account password</p>
+            <form class="modal-form" id="change-password-form">
+                <div class="modal-error" id="change-password-error">
+                    <i data-lucide="alert-triangle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+                    <span id="change-password-error-text"></span>
+                </div>
+                <div class="form-group">
+                    <label for="change-current-password">Current Password</label>
+                    <div class="password-wrapper">
+                        <input id="change-current-password" type="password" placeholder="Enter current password" required>
+                        <button type="button" class="password-toggle" data-target="change-current-password" tabindex="-1" aria-label="Show password">
+                            <i data-lucide="eye" class="password-toggle-icon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="change-new-password">New Password</label>
+                    <div class="password-wrapper">
+                        <input id="change-new-password" type="password" placeholder="Enter new password" required>
+                        <button type="button" class="password-toggle" data-target="change-new-password" tabindex="-1" aria-label="Show password">
+                            <i data-lucide="eye" class="password-toggle-icon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="change-password-submit-btn">Change Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SECTION 1: SCANNER DASHBOARD -->
+    <main id="dashboard-section" class="page-section active">
+        <div class="dashboard-grid">
+            <!-- Live Webcam Scanner Card -->
+            <div class="panel">
+                <div class="panel-title">
+                    <div class="panel-title-text">
+                        <i data-lucide="video" class="icon"></i>
+                        Live WebCam Viewport
+                    </div>
+                    <span class="badge" id="camera-status-badge">Live</span>
+                </div>
+
+                <!-- Video Viewport -->
+                <div class="scanner-viewport-wrapper">
+                    <div id="video-container">
+                        <video id="qr-video" playsinline autoplay muted></video>
+                    </div>
+                    <div class="scan-overlay-line"></div>
+                </div>
+
+                <!-- Controls Buttons -->
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="start-button">
+                        <i data-lucide="play" class="btn-icon"></i> Start Camera
+                    </button>
+                    <button class="btn btn-secondary" id="stop-button">
+                        <i data-lucide="square" class="btn-icon"></i> Stop Camera
+                    </button>
+                </div>
+
+                <!-- Webcam Scan Results -->
+                <div class="result-card" id="cam-result-container">
+                    <div class="absolute left-0 top-0 w-1 h-full bg-indigo-500" id="cam-result-accent"></div>
+                    <div class="result-header">
+                        <span>Cam Result</span>
+                        <div class="status-indicator">
+                            <span class="status-dot" id="status-dot"></span>
+                            <span id="scan-status-text">Idle</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0.5rem 0;">
+                        <div class="result-body" id="cam-qr-result">None</div>
+                        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                            <button class="btn btn-secondary" id="cam-copy-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none;">
+                                <i data-lucide="copy" class="btn-icon"></i> Copy
+                            </button>
+                            <a class="btn btn-primary" id="cam-open-btn" target="_blank" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none; text-decoration: none;">
+                                <i data-lucide="external-link" class="btn-icon"></i> Open
+                            </a>
+                        </div>
+                    </div>
+                    <div class="result-time" id="cam-qr-result-timestamp">No timestamp recorded</div>
+                </div>
+            </div>
+
+            <!-- Controls and File Upload Card -->
+            <div class="panel">
+                <div class="panel-title">
+                    <div class="panel-title-text">
+                        <i data-lucide="sliders" class="icon"></i>
+                        Scanner Settings
+                    </div>
+                </div>
+
+                <!-- Settings Fields -->
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="control-row">
+                        <label>Preferred Camera Source</label>
+                        <select class="select-custom" id="cam-list">
+                            <option value="environment" selected>Environment Facing (Default)</option>
+                            <option value="user">User Facing (Front Camera)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-row">
+                        <label>Scan Region Custom Style</label>
+                        <select class="select-custom" id="scan-region-highlight-style-select">
+                            <option value="default-style">Default Style</option>
+                            <option value="example-style-1">Neon Indigo style</option>
+                            <option value="example-style-2">Glass Overlay fuchsia</option>
+                        </select>
+                    </div>
+
+                    <div class="control-row">
+                        <label>Inversion Mode</label>
+                        <select class="select-custom" id="inversion-mode-select">
+                            <option value="original">Scan Original (Dark QR on bright background)</option>
+                            <option value="invert">Scan Inverted (Bright QR on dark background)</option>
+                            <option value="both">Scan Both Modes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Options Group -->
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 0.5rem; flex-wrap: wrap;">
+                    <label class="checkbox-container">
+                        <input id="show-scan-region" type="checkbox">
+                        <span class="checkbox-custom-box"></span>
+                        <span class="checkbox-label">Show scan region canvas</span>
+                    </label>
+                    
+                    <button class="btn btn-success" id="flash-toggle" style="display:none; padding: 0.5rem 1rem; font-size: 0.85rem;">
+                        <i data-lucide="zap" class="btn-icon"></i> Flash: <span id="flash-state">off</span>
+                    </button>
+                </div>
+
+                <!-- Hardware availability details -->
+                <div style="display: flex; gap: 1.5rem; text-align: left; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        <i data-lucide="zap" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                        Flash: <span id="cam-has-flash" style="color: white; font-weight: 500;">checking...</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        <i data-lucide="camera" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                        Hardware Present: <span id="cam-has-camera" style="color: white; font-weight: 500;">checking...</span>
+                    </div>
+                </div>
+
+                <!-- File Upload Scan Section -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; color: white;">
+                        <i data-lucide="file-image" class="icon"></i>
+                        Scan Static Image
+                    </h3>
+                    
+                    <div class="file-upload-zone">
+                        <i data-lucide="upload-cloud" class="upload-icon"></i>
+                        <span class="file-upload-text" style="display: block;">
+                            <strong>Click to upload</strong> or drag & drop image
+                        </span>
+                        <input type="file" id="file-selector" accept="image/*">
+                    </div>
+                </div>
+
+                <!-- File Scan Results -->
+                <div class="result-card" id="file-result-container">
+                    <div class="absolute left-0 top-0 w-1 h-full bg-indigo-500" id="file-result-accent"></div>
+                    <div class="result-header">
+                        <span>Static Image Scan Result</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0.5rem 0;">
+                        <div class="result-body" id="file-qr-result" style="font-size: 1.1rem;">None Uploaded</div>
+                        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                            <button class="btn btn-secondary" id="file-copy-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none;">
+                                <i data-lucide="copy" class="btn-icon"></i> Copy
+                            </button>
+                            <a class="btn btn-primary" id="file-open-btn" target="_blank" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none; text-decoration: none;">
+                                <i data-lucide="external-link" class="btn-icon"></i> Open
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SECTION 2: ABOUT -->
+    <!-- SECTION 2: ABOUT -->
+    <section id="about-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">About</p>
+            <h2 class="gradient-text">About Dashboard</h2>
+            <p class="page-subtitle">
+                Discover the story, purpose, and technology behind the Advanced QR Scanner Dashboard
+            </p>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.02em;">
+                Our Mission
+            </h3>
+            <p style="font-size: 0.95rem; line-height: 1.8; color: rgba(255,255,255,0.68);">
+                The Advanced QR Scanner Dashboard was created to simplify how users and developers decode and test
+                QR codes instantly in their browsers. By utilizing clean WebRTC APIs for live camera access and
+                offloading complex decoding logic to background Web Workers, the dashboard achieves maximum decoding speed and accuracy 
+                completely on the client-side. The app respects your privacy by processing everything locally without external database transmission.
+            </p>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.02em;">
+                Technology Stack
+            </h3>
+            <div class="tech-stack" id="tech-stack-container"></div>
+        </div>
+
+        <div class="about-grid" id="about-grid-container"></div>
+    </section>
+
+    <!-- SECTION 3: FEATURES -->
+    <section id="features-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">Capabilities</p>
+            <h2 class="gradient-text">Dashboard Features</h2>
+            <p class="page-subtitle">
+                The QR Scanner Dashboard streamlines your decoding workflow with a complete set of client-side processing tools.
+            </p>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                    Why choose local in-browser scanning?
+                </h3>
+                <p style="font-size: 0.95rem; line-height: 1.8; color: rgba(255,255,255,0.68); max-width: 800px; margin: 0 auto;">
+                    A completely offline-ready, responsive dashboard that runs in any browser. It supports multi-threading 
+                    via Web Workers, inline video streams on mobile and desktop devices, flash hardware controls, 
+                    and dynamic inversion methods for all QR types, maintaining premium glassmorphism styling throughout.
+                </p>
+            </div>
+        </div>
+
+        <div class="feature-grid" id="feature-grid-container"></div>
+    </section>
+
+    <!-- SECTION 4: HOW IT WORKS (SOLUTIONS & WORKFLOW) -->
+    <section id="solutions-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">Step by Step</p>
+            <h2 class="gradient-text">Solutions & Workflow</h2>
+            <p class="page-subtitle">
+                A complete walkthrough of how the QR Scanner Dashboard decodes matrices, from startup to processing frames.
+            </p>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.02em;">
+                Scanning Architecture Overview
+            </h3>
+            <p style="font-size: 0.92rem; line-height: 1.8; color: rgba(255,255,255,0.68);">
+                The scanner operates on a decoupled multi-threaded architecture. The front-end view captures camera frames via 
+                WebRTC. It offloads the image buffer to a background Web Worker running our compiled decoding bundle. The worker uses 
+                jsQR matrix extraction to scan, and sends back the raw data. This keeps UI transitions completely lag-free.
+            </p>
+        </div>
+
+        <div class="steps-list" id="steps-list-container"></div>
+    </section>
+
+    <!-- SECTION 5: DEVELOPER -->
+    <section id="developer-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">Creator</p>
+            <h2 class="gradient-text">Developer</h2>
+            <p class="page-subtitle">
+                Meet the developer behind the QR Scanner Dashboard
+            </p>
+        </div>
+
+        <div class="glass-card">
+            <div class="dev-card">
+                <div class="dev-avatar">AJ</div>
+                <div class="dev-info">
+                    <h3>Aishwary Jhaveri</h3>
+                    <div class="dev-role">Full-Stack Developer</div>
+
+                    <div class="dev-details">
+                        <div class="dev-detail-item">
+                            <i data-lucide="phone" style="width: 1.25rem; height: 1.25rem; color: var(--green);"></i>
+                            <span>+91 8160682897</span>
+                        </div>
+                        <div class="dev-detail-item">
+                            <i data-lucide="mail" style="width: 1.25rem; height: 1.25rem; color: var(--green);"></i>
+                            <span>aishwaryzaveri@gmail.com</span>
+                        </div>
+                        <div class="dev-detail-item">
+                            <i data-lucide="map-pin" style="width: 1.25rem; height: 1.25rem; color: var(--green);"></i>
+                            <span>India</span>
+                        </div>
+                        <div class="dev-detail-item">
+                            <i data-lucide="globe" style="width: 1.25rem; height: 1.25rem; color: var(--green);"></i>
+                            <span>Web Design & Engineering</span>
+                        </div>
+                    </div>
+
+                    <div class="dev-bio">
+                        A passionate full-stack developer with expertise in building modern, high-performance web applications.
+                        This QR Scanner Dashboard showcases proficiency in crafting responsive, glassmorphic interfaces using
+                        adapted custom stylesheets, WebRTC media stream integrations, multi-threaded Web Workers, and solid offline utilities.
+                    </div>
+
+                    <div class="skills-section">
+                        <h4>Tech Stack & Skills</h4>
+                        <div class="skills-tags" id="developer-skills-tags"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: ANALYTICS (only when logged in) -->
+    <section id="analytics-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">Dashboard</p>
+            <h2 class="gradient-text">Scan Analytics</h2>
+            <p class="page-subtitle">View and manage all your QR scan records across time slots</p>
+        </div>
+
+        <div class="analytics-header">
+            <div class="analytics-filters">
+                <select class="filter-select" id="slot-filter">
+                    <option value="all">All Time Slots</option>
+                    <option value="morning">🌅 Morning</option>
+                    <option value="afternoon">☀️ Afternoon</option>
+                    <option value="evening">🌆 Evening</option>
+                    <option value="night">🌙 Night</option>
+                </select>
+                <input class="filter-input" id="qr-search" type="text" placeholder="Search QR value...">
+                <button class="refresh-btn" id="refresh-analytics">
+                    <i data-lucide="refresh-cw" style="width: 14px; height: 14px; vertical-align: middle;"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="analytics-grid" id="analytics-stats">
+            <div class="analytics-stat-card">
+                <div class="stat-value" style="color: var(--green);" id="stat-total">0</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+            <div class="analytics-stat-card">
+                <div class="stat-value" style="color: #facc15;" id="stat-morning">0</div>
+                <div class="stat-label">🌅 Morning</div>
+            </div>
+            <div class="analytics-stat-card">
+                <div class="stat-value" style="color: #fb923c;" id="stat-afternoon">0</div>
+                <div class="stat-label">☀️ Afternoon</div>
+            </div>
+            <div class="analytics-stat-card">
+                <div class="stat-value" style="color: #c084fc;" id="stat-evening">0</div>
+                <div class="stat-label">🌆 Evening</div>
+            </div>
+            <div class="analytics-stat-card">
+                <div class="stat-value" style="color: #38bdf8;" id="stat-night">0</div>
+                <div class="stat-label">🌙 Night</div>
+            </div>
+            <div class="analytics-stat-card">
+                <div class="stat-value" style="color: var(--cyan);" id="stat-unique">0</div>
+                <div class="stat-label">Unique QRs</div>
+            </div>
+        </div>
+
+        <!-- Scans Table -->
+        <div class="table-wrapper">
+            <table class="scans-table" id="scans-table">
+                <thead>
+                    <tr>
+                        <th>QR Value</th>
+                        <th>Time Slot</th>
+                        <th>Scanned At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="scans-table-body">
+                    <tr>
+                        <td class="empty-message" colspan="4">
+                            <i data-lucide="inbox" style="width: 32px; height: 32px;"></i>
+                            No scans yet. Start scanning QR codes!
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- SECTION 8: ADMIN PANEL (admin only) -->
+    <section id="admin-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">Administration</p>
+            <h2 class="gradient-text">Admin Panel</h2>
+            <p class="page-subtitle">Manage users, view system stats, and control scan data</p>
+        </div>
+
+        <div class="admin-grid">
+            <div class="analytics-stat-card admin-stat-card">
+                <div class="stat-value" style="color: var(--green);" id="admin-total-users">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="analytics-stat-card admin-stat-card">
+                <div class="stat-value" style="color: var(--cyan);" id="admin-total-scans">0</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+            <div class="analytics-stat-card admin-stat-card">
+                <div class="stat-value" style="color: #a855f7;" id="admin-unique-qrs">0</div>
+                <div class="stat-label">Unique QRs</div>
+            </div>
+            <div class="analytics-stat-card admin-stat-card">
+                <div class="stat-value" style="color: #facc15;" id="admin-scans-today">0</div>
+                <div class="stat-label">Scans Today</div>
+            </div>
+        </div>
+
+        <div class="admin-section-header">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: white;">Registered Users</h3>
+        </div>
+        <div class="table-wrapper">
+            <table class="scans-table" id="admin-users-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Registered</th>
+                        <th>Scans</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-users-body">
+                    <tr>
+                        <td class="empty-message" colspan="5">
+                            <i data-lucide="inbox" style="width: 32px; height: 32px;"></i>
+                            Loading users...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-section-header" style="margin-top: 2rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: white;">Data Management</h3>
+        </div>
+        <div class="admin-actions">
+            <button class="btn btn-danger" id="admin-clear-all-btn">
+                <i data-lucide="trash-2" class="btn-icon"></i> Clear All Scans
+            </button>
+            <button class="btn btn-secondary" id="admin-export-json-btn">
+                <i data-lucide="download" class="btn-icon"></i> Export JSON
+            </button>
+            <button class="btn btn-secondary" id="admin-export-csv-btn">
+                <i data-lucide="download" class="btn-icon"></i> Export CSV
+            </button>
+            <button class="btn btn-success" id="admin-change-password-btn">
+                <i data-lucide="key" class="btn-icon"></i> Change Password
+            </button>
+            <button class="btn btn-success" id="admin-refresh-btn">
+                <i data-lucide="refresh-cw" class="btn-icon"></i> Refresh
+            </button>
+        </div>
+    </section>
+
+    <!-- SECTION 7: CONTACT -->
+    <section id="contact-section" class="page-section">
+        <div class="page-header">
+            <p class="eyebrow">Get in Touch</p>
+            <h2 class="gradient-text">Contact Us</h2>
+            <p class="page-subtitle">
+                Have a question, feedback, or need support? Reach out and we will respond promptly.
+            </p>
+        </div>
+
+        <div class="contact-grid">
+            <div class="glass-card">
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.25rem; letter-spacing: -0.02em;">
+                    Contact Information
+                </h3>
+                <div class="contact-info-list" id="contact-info-list-container"></div>
+            </div>
+
+            <div class="glass-card">
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.25rem; letter-spacing: -0.02em;">
+                    Send a Message
+                </h3>
+
+                <form class="contact-form" id="contact-form-el">
+                    <div class="contact-success" id="contact-success-alert" style="display: none;">
+                        <i data-lucide="check-circle" style="width: 18px; height: 18px;"></i>
+                        <span>Your message has been sent successfully! We will get back to you soon.</span>
+                    </div>
+                    <div class="contact-error" id="contact-error-alert" style="display: none;">
+                        <i data-lucide="alert-triangle" style="width: 18px; height: 18px;"></i>
+                        <span id="contact-error-message">Failed to send message. Please try again.</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contact-name">Your Name</label>
+                            <input id="contact-name" type="text" name="name" placeholder="Enter your name" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-email">Your Email</label>
+                            <input id="contact-email" type="email" name="email" placeholder="Enter your email" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-subject">Subject</label>
+                        <input id="contact-subject" type="text" name="subject" placeholder="Enter subject" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-message">Message</label>
+                        <textarea id="contact-message" name="message" placeholder="Write your message here..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="contact-submit-btn">
+                        <span><i data-lucide="send" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"></i> Send Message</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script type="module">
+    import QrScanner from "../src/qr-scanner.ts";
+
+    // ===== Configuration =====
+    const API_BASE = '/api';
+
+    // ===== DOM References =====
+    const menuTriggerBtn = document.getElementById('menu-trigger-btn');
+    const menuDropdownPopover = document.getElementById('menu-dropdown-popover');
+    const menuOverlay = document.getElementById('menu-overlay');
+    const menuItems = document.querySelectorAll('.menu-item');
+    const pageSections = document.querySelectorAll('.page-section');
+    const analyticsMenuItem = document.getElementById('analytics-menu-item');
+    const adminMenuItem = document.getElementById('admin-menu-item');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const loggedInInfo = document.getElementById('logged-in-info');
+    const authUserName = document.getElementById('auth-user-name');
+    const loginModal = document.getElementById('login-modal');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const loginErrorText = document.getElementById('login-error-text');
+    const loginSubmitBtn = document.getElementById('login-submit-btn');
+    const registerForm = document.getElementById('register-form');
+    const registerError = document.getElementById('register-error');
+    const registerErrorText = document.getElementById('register-error-text');
+    const registerSubmitBtn = document.getElementById('register-submit-btn');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const loginFormContainer = document.getElementById('login-form-container');
+    const registerFormContainer = document.getElementById('register-form-container');
+    const toastContainer = document.getElementById('toast-container');
+
+    // ===== Token & Auth Management =====
+    let currentUser = null;
+
+    const getToken = () => localStorage.getItem('qr_scanner_token');
+
+    let currentPageSection = 'dashboard-section';
+
+    const setAuth = (token, user) => {
+        localStorage.setItem('qr_scanner_token', token);
+        currentUser = user;
+        if (user) {
+            loginBtn.style.display = 'none';
+            loggedInInfo.style.display = 'flex';
+            authUserName.textContent = user.username;
+            document.querySelector('.menu-item[data-target="dashboard-section"]').style.display = 'none';
+            document.querySelector('.menu-item[data-target="about-section"]').style.display = 'none';
+            document.querySelector('.menu-item[data-target="features-section"]').style.display = 'none';
+            document.querySelector('.menu-item[data-target="solutions-section"]').style.display = 'none';
+            document.querySelector('.menu-item[data-target="developer-section"]').style.display = 'none';
+            document.querySelector('.menu-item[data-target="contact-section"]').style.display = 'none';
+            analyticsMenuItem.style.display = 'flex';
+            adminMenuItem.style.display = 'flex';
+        } else {
+            loginBtn.style.display = 'flex';
+            loggedInInfo.style.display = 'none';
+            authUserName.textContent = '';
+            document.querySelector('.menu-item[data-target="dashboard-section"]').style.display = 'flex';
+            document.querySelector('.menu-item[data-target="about-section"]').style.display = 'flex';
+            document.querySelector('.menu-item[data-target="features-section"]').style.display = 'flex';
+            document.querySelector('.menu-item[data-target="solutions-section"]').style.display = 'flex';
+            document.querySelector('.menu-item[data-target="developer-section"]').style.display = 'flex';
+            document.querySelector('.menu-item[data-target="contact-section"]').style.display = 'flex';
+            analyticsMenuItem.style.display = 'none';
+            adminMenuItem.style.display = 'none';
+        }
+    };
+
+    const clearAuth = () => {
+        localStorage.removeItem('qr_scanner_token');
+        currentUser = null;
+        loginBtn.style.display = 'flex';
+        loggedInInfo.style.display = 'none';
+        authUserName.textContent = '';
+        document.querySelector('.menu-item[data-target="dashboard-section"]').style.display = 'flex';
+        document.querySelector('.menu-item[data-target="about-section"]').style.display = 'flex';
+        document.querySelector('.menu-item[data-target="features-section"]').style.display = 'flex';
+        document.querySelector('.menu-item[data-target="solutions-section"]').style.display = 'flex';
+        document.querySelector('.menu-item[data-target="developer-section"]').style.display = 'flex';
+        document.querySelector('.menu-item[data-target="contact-section"]').style.display = 'flex';
+        analyticsMenuItem.style.display = 'none';
+        adminMenuItem.style.display = 'none';
+        pageSections.forEach(s => s.classList.remove('active'));
+        document.getElementById('dashboard-section').classList.add('active');
+        menuItems.forEach(mi => mi.classList.remove('active'));
+        document.querySelector('.menu-item[data-target="dashboard-section"]').classList.add('active');
+        currentPageSection = 'dashboard-section';
+        if (scanner) scanner.stop();
+    };
+
+    const navigateToSection = (sectionId) => {
+        pageSections.forEach(s => s.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+        menuItems.forEach(mi => mi.classList.remove('active'));
+        document.querySelector(`.menu-item[data-target="${sectionId}"]`)?.classList.add('active');
+        currentPageSection = sectionId;
+    };
+
+    const checkAuth = async () => {
+        const token = getToken();
+        if (!token) {
+            clearAuth();
+            return false;
+        }
+        try {
+            const res = await fetch(`${API_BASE}/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Invalid token');
+            const data = await res.json();
+            setAuth(token, data.user);
+            navigateToSection('analytics-section');
+            loadAnalytics();
+            return true;
+        } catch {
+            clearAuth();
+            return false;
+        }
+    };
+
+    // ===== Toast Notifications =====
+    const showToast = (message, type = 'success') => {
+        const icons = { success: 'check-circle', warning: 'alert-triangle', error: 'x-circle' };
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width: 18px; height: 18px; flex-shrink: 0;"></i> ${message}`;
+        toastContainer.appendChild(toast);
+        lucide.createIcons();
+        setTimeout(() => {
+            toast.classList.add('toast-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    };
+
+    // ===== API Helpers =====
+    const apiCall = async (endpoint, options = {}) => {
+        const token = getToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const url = `${API_BASE}${endpoint}`;
+        console.log(`🌐 API ${options.method || 'GET'} ${url}`, options.body || '');
+        const res = await fetch(url, { ...options, headers });
+        const text = await res.text();
+        console.log(`📦 Response (${res.status}):`, text.substring(0, 200));
+        let data;
+        try { data = JSON.parse(text); } catch { data = { error: text || 'Empty response' }; }
+        if (!res.ok) throw { status: res.status, ...data };
+        return data;
+    };
+
+    // ===== Auth Functions =====
+    const showLoginModal = () => {
+        switchAuthTab(true);
+        loginModal.classList.add('active');
+        loginError.classList.remove('active');
+        registerError.classList.remove('active');
+        loginForm.reset();
+        registerForm.reset();
+    };
+    const hideLoginModal = () => loginModal.classList.remove('active');
+
+    loginBtn.addEventListener('click', showLoginModal);
+
+    document.getElementById('close-login-modal').addEventListener('click', hideLoginModal);
+    loginModal.addEventListener('click', (e) => { if (e.target === loginModal) hideLoginModal(); });
+
+    // Login form
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        loginSubmitBtn.disabled = true;
+        loginSubmitBtn.textContent = 'Logging in...';
+        loginError.classList.remove('active');
+        try {
+            const data = await apiCall('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('login-email').value,
+                    password: document.getElementById('login-password').value,
+                }),
+            });
+            setAuth(data.token, data.user);
+            hideLoginModal();
+            showToast(`Welcome back, ${data.user.username}!`, 'success');
+            if (scanner) scanner.stop();
+            navigateToSection('analytics-section');
+            loadAnalytics();
+        } catch (err) {
+            const msg = err.error || err.message || 'Cannot reach server. Is the backend running on port 3000?';
+            console.error('❌ Login error:', err);
+            loginErrorText.textContent = msg;
+            loginError.classList.add('active');
+        } finally {
+            loginSubmitBtn.disabled = false;
+            loginSubmitBtn.textContent = 'Login';
+        }
+    });
+
+    // ===== Auth Tab Switching =====
+    const switchAuthTab = (showLogin) => {
+        if (showLogin) {
+            tabLogin.classList.add('active');
+            tabRegister.classList.remove('active');
+            loginFormContainer.style.display = '';
+            registerFormContainer.style.display = 'none';
+        } else {
+            tabLogin.classList.remove('active');
+            tabRegister.classList.add('active');
+            loginFormContainer.style.display = 'none';
+            registerFormContainer.style.display = '';
+        }
+    };
+
+    tabLogin.addEventListener('click', () => switchAuthTab(true));
+    tabRegister.addEventListener('click', () => switchAuthTab(false));
+
+    // Register form
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        registerSubmitBtn.disabled = true;
+        registerSubmitBtn.textContent = 'Registering...';
+        registerError.classList.remove('active');
+
+        const password = document.getElementById('register-password').value;
+        const confirm = document.getElementById('register-confirm').value;
+        if (password !== confirm) {
+            registerErrorText.textContent = 'Passwords do not match';
+            registerError.classList.add('active');
+            registerSubmitBtn.disabled = false;
+            registerSubmitBtn.textContent = 'Register';
+            return;
+        }
+
+        try {
+            const data = await apiCall('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({
+                    username: document.getElementById('register-username').value,
+                    email: document.getElementById('register-email').value,
+                    password,
+                }),
+            });
+            setAuth(data.token, data.user);
+            hideLoginModal();
+            showToast(`Welcome, ${data.user.username}!`, 'success');
+            if (scanner) scanner.stop();
+            navigateToSection('analytics-section');
+            loadAnalytics();
+        } catch (err) {
+            const msg = err.error || err.message || 'Registration failed';
+            console.error('❌ Register error:', err);
+            registerErrorText.textContent = msg;
+            registerError.classList.add('active');
+        } finally {
+            registerSubmitBtn.disabled = false;
+            registerSubmitBtn.textContent = 'Register';
+        }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        clearAuth();
+        showToast('Logged out', 'success');
+        if (scanner) scanner.stop();
+        document.getElementById('camera-status-badge').textContent = 'Paused';
+        document.getElementById('camera-status-badge').style.background = 'rgba(249, 115, 22, 0.15)';
+        document.getElementById('camera-status-badge').style.color = 'var(--orange)';
+        document.getElementById('camera-status-badge').style.borderColor = 'rgba(249, 115, 22, 0.3)';
+        document.getElementById('scan-status-text').textContent = 'Stopped';
+    });
+
+    // ===== Navigation and Menu Logic =====
+    const openMenu = () => {
+        menuOverlay.style.display = 'block';
+        menuDropdownPopover.style.display = 'flex';
+        menuOverlay.offsetHeight;
+        menuDropdownPopover.offsetHeight;
+        menuOverlay.classList.add('active');
+        menuDropdownPopover.classList.add('active');
+    };
+
+    const closeMenu = () => {
+        menuOverlay.classList.remove('active');
+        menuDropdownPopover.classList.remove('active');
+        setTimeout(() => {
+            if (!menuOverlay.classList.contains('active')) {
+                menuOverlay.style.display = 'none';
+                menuDropdownPopover.style.display = 'none';
+            }
+        }, 300);
+    };
+
+    menuTriggerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isActive = menuDropdownPopover.classList.contains('active');
+        if (isActive) closeMenu();
+        else openMenu();
+    });
+
+    menuOverlay.addEventListener('click', closeMenu);
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            closeMenu();
+            const targetId = item.getAttribute('data-target');
+            menuItems.forEach(mi => mi.classList.remove('active'));
+            item.classList.add('active');
+            currentPageSection = targetId;
+            pageSections.forEach(section => {
+                if (section.id === targetId) {
+                    section.classList.add('active');
+                    if (section.id === 'dashboard-section') {
+                        startCamera();
+                    } else if (section.id === 'analytics-section') {
+                        loadAnalytics();
+                        if (scanner) {
+                            scanner.stop();
+                            document.getElementById('camera-status-badge').textContent = 'Paused';
+                            document.getElementById('camera-status-badge').style.background = 'rgba(249, 115, 22, 0.15)';
+                            document.getElementById('camera-status-badge').style.color = 'var(--orange)';
+                            document.getElementById('camera-status-badge').style.borderColor = 'rgba(249, 115, 22, 0.3)';
+                        }
+                    } else if (section.id === 'admin-section') {
+                        loadAdminPanel();
+                        stopScannerIfRunning();
+                    } else {
+                        stopScannerIfRunning();
+                        document.getElementById('scan-status-text').textContent = 'Stopped';
+                    }
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    const stopScannerIfRunning = () => {
+        if (scanner) {
+            scanner.stop();
+            document.getElementById('camera-status-badge').textContent = 'Paused';
+            document.getElementById('camera-status-badge').style.background = 'rgba(249, 115, 22, 0.15)';
+            document.getElementById('camera-status-badge').style.color = 'var(--orange)';
+            document.getElementById('camera-status-badge').style.borderColor = 'rgba(249, 115, 22, 0.3)';
+        }
+    };
+
+    // Data lists for new sections
+    const cardColors = [
+        { color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)' },
+        { color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+        { color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+        { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+        { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+        { color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
+    ];
+
+    const techStack = [
+        'TypeScript', 'JavaScript (ES6+)', 'HTML5', 'CSS3', 'Vite 5',
+        'PostCSS', 'jsQR-es6', 'WebRTC MediaDevices', 'Web Workers API',
+        'Lucide Icons', 'Canvas Rendering', 'SVG Highlighting', 'Browser LocalStorage'
+    ];
+
+    const highlights = [
+        {
+            icon: 'zap',
+            title: 'Vite Speed Optimization',
+            desc: 'Powered by Vite 5 for instant development reloading and highly optimized browser delivery. Captures and renders frames in real-time.'
+        },
+        {
+            icon: 'moon',
+            title: 'Futuristic Glow UI',
+            desc: 'A custom glassmorphic dark theme styled with radial glow layers, backdrop blur settings, and rotating color gradients.'
+        },
+        {
+            icon: 'cpu',
+            title: 'Web Worker Threading',
+            desc: 'Decoupled processing runs the decoding algorithm in a separate Web Worker file. The UI main thread stays free of execution delays.'
+        },
+        {
+            icon: 'eye',
+            title: 'Code Highlighting',
+            desc: 'Generates bounding boxes and canvas vector outlines to highlight detected code contours directly on top of the live feed.'
+        },
+        {
+            icon: 'lock',
+            title: '100% Privacy Secure',
+            desc: 'All frames are processed locally inside the browser. No scanned text is sent to an external server or saved in the cloud.'
+        },
+        {
+            icon: 'sliders',
+            title: 'Hardware Control Integration',
+            desc: 'Allows users to toggle hardware flashlights and select preferred camera sources (e.g. environment back cameras on mobile).'
+        }
+    ];
+
+    const features = [
+        {
+            icon: 'video',
+            color: '#10b981',
+            bg: 'rgba(16,185,129,0.12)',
+            title: 'Realtime Webcam Decoding',
+            desc: 'A full-featured scanner viewport feeding video data to the decoder. Updates labels and status highlights instantly.',
+            process: 'Permission granted → Camera feed initialized → Frame offloaded to worker → Scanner highlights code.',
+            output: 'Scanned data card overlay with Copy and Open URL clickable actions.',
+            result: 'Locate and decode physical QR barcodes instantly.'
+        },
+        {
+            icon: 'file-image',
+            color: '#0ea5e9',
+            bg: 'rgba(14,165,233,0.12)',
+            title: 'Static Image Import',
+            desc: 'Allows importing image files (PNG, JPG, WebP) to parse them for QR codes offline without a camera present.',
+            process: 'Upload file selector click → ScanImage call triggered → Decoded results logged to card.',
+            output: 'Result text shown in dedicated Upload card panel.',
+            result: 'Easily read digital files or shared receipts for QR information.'
+        },
+        {
+            icon: 'copy',
+            color: '#a855f7',
+            bg: 'rgba(168,85,247,0.12)',
+            title: 'Instant Clipboard Copy',
+            desc: 'Click a button to copy the scanned string instantly with a check indicator for validation feedback.',
+            process: 'Decoded QR → Click Copy → Data written via clipboard API → Indicator updates to Copied.',
+            output: 'Visual success notification feedback in the action group.',
+            result: 'Quick data transfer to other apps without manual typing.'
+        },
+        {
+            icon: 'external-link',
+            color: '#f59e0b',
+            bg: 'rgba(245,158,11,0.12)',
+            title: 'Smart URL Redirection',
+            desc: 'Recognizes links and shows an external redirection anchor, automatically prepending secure protocol protocols.',
+            process: 'Regex scans output text → If link is matched → Target href formatted → Open button revealed.',
+            output: 'Anchor link with Lucide icon opening in a separate browser tab.',
+            result: 'Instant navigation to decoded web destinations.'
+        },
+        {
+            icon: 'zap',
+            color: '#06b6d4',
+            bg: 'rgba(6,182,212,0.12)',
+            title: 'Hardware Flash Switch',
+            desc: 'Detects if the device has a camera flash/torch and shows a toggle button to illuminate dark areas during scan.',
+            process: 'Scanner started → Query flash capability → Render button if true → Toggle track settings.',
+            output: 'Flash state label toggling between on and off.',
+            result: 'Reliable scanning even in extremely low light environments.'
+        },
+        {
+            icon: 'refresh-cw',
+            color: '#22c55e',
+            bg: 'rgba(34,197,94,0.12)',
+            title: 'Inversion Scan Modes',
+            desc: 'Configure the decoder to read regular dark codes, inverted white codes on black, or attempt scanning both concurrently.',
+            process: 'Dropdown select change → Scanner configuration updated → Inversion check array adjusted.',
+            output: 'Adjusted scan configuration in the worker decoder.',
+            result: 'Ability to scan inverted QR codes found on custom screen designs.'
+        }
+    ];
+
+    const steps = [
+        {
+            title: 'Start Application',
+            detail: 'Start the Vite server (port 5176). The dashboard opens. It requests camera permissions automatically, establishing an environment back-camera stream on mobile devices.',
+            workflow: 'The browser executes main/index.html which imports src/qr-scanner.ts, setting up standard media stream controls.'
+        },
+        {
+            title: 'User Permission Prompt',
+            detail: 'The browser requests permission for camera hardware. When accepted, the stream loads. If blocked, the status badge transitions to red ("Blocked") and displays help instructions.',
+            workflow: 'MediaDevices.getUserMedia is called. A catch block redirects errors to update the card overlay messages.'
+        },
+        {
+            title: 'Web Worker Spawning',
+            detail: 'The scanner instantiates a separate thread from src/worker.ts. This offloads the heavy matrix decoding loop from the browser\'s UI thread.',
+            workflow: 'Creates a Worker object utilizing new Worker(new URL("./worker.ts", import.meta.url), {type: "module"}).'
+        },
+        {
+            title: 'Frame Streaming & Sampling',
+            detail: 'The scanner samples video frames at 25 scans per second. A canvas draws the active frame and reads raw ImageData buffers.',
+            workflow: 'A requestAnimationFrame loop samples frames and coordinates with the worker message queue.'
+        },
+        {
+            title: 'Background Matrix Parsing',
+            detail: 'The worker receives the frame buffer. It processes binary pixels using jsQR. If a QR code is detected, it returns the string and coordinate points.',
+            workflow: 'The worker posts a message containing the scanned coordinate coordinates back to the controller.'
+        },
+        {
+            title: 'Target Highlight Render',
+            detail: 'The UI layer receives the coordinates. It renders a clean neon fuchsia overlay block precisely mapping the borders of the physical QR code.',
+            workflow: 'Updates an SVG layer overlaying the video preview with calculated corner segments.'
+        },
+        {
+            title: 'Interactive Results & Links',
+            detail: 'The text matches are loaded in the result card. If it is a web URL, an "Open" button appears; otherwise, a "Copy" button becomes active.',
+            workflow: 'Regex evaluates output data, rendering target anchors or copy click handlers.'
+        }
+    ];
+
+    // Populate technology stack badges
+    const techContainer = document.getElementById('tech-stack-container');
+    techStack.forEach(tech => {
+        const badge = document.createElement('span');
+        badge.className = 'tech-badge';
+        badge.textContent = tech;
+        techContainer.appendChild(badge);
+    });
+
+    // Populate Highlights
+    const aboutGrid = document.getElementById('about-grid-container');
+    highlights.forEach((h, i) => {
+        const c = cardColors[i % cardColors.length];
+        const card = document.createElement('div');
+        card.className = 'about-card';
+        card.innerHTML = `
+            <div class="feature-icon" style="background: ${c.bg}; color: ${c.color};">
+                <i data-lucide="${h.icon}"></i>
+            </div>
+            <h3>${h.title}</h3>
+            <p>${h.desc}</p>
+        `;
+        aboutGrid.appendChild(card);
+    });
+
+    // Populate Features
+    const featureGrid = document.getElementById('feature-grid-container');
+    features.forEach((f, i) => {
+        const card = document.createElement('div');
+        card.className = 'feature-item';
+        card.innerHTML = `
+            <div class="feature-icon" style="background: ${f.bg}; color: ${f.color};">
+                <i data-lucide="${f.icon}"></i>
+            </div>
+            <h3>${f.title}</h3>
+            <p>${f.desc}</p>
+            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 10px; border-left: 3px solid ${f.color}">
+                <p style="font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-bottom: 0.4rem;">
+                    <strong style="color: ${f.color}">Process:</strong> ${f.process}
+                </p>
+                <p style="font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-bottom: 0.4rem;">
+                    <strong style="color: ${f.color}">Output:</strong> ${f.output}
+                </p>
+                <p style="font-size: 0.82rem; color: rgba(255,255,255,0.55);">
+                    <strong style="color: ${f.color}">Result:</strong> ${f.result}
+                </p>
+            </div>
+        `;
+        featureGrid.appendChild(card);
+    });
+
+    // Populate Solution Steps
+    const stepsContainer = document.getElementById('steps-list-container');
+    steps.forEach((step, i) => {
+        const item = document.createElement('div');
+        item.className = 'step-item';
+        item.innerHTML = `
+            <div class="step-number" style="background: rgba(34, 197, 94, 0.15); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.25);">
+                ${i + 1}
+            </div>
+            <div class="step-content">
+                <h4>${step.title}</h4>
+                <p>${step.detail}</p>
+                <div class="step-detail" style="border-left: 3px solid var(--green); padding-left: 0.5rem; margin-top: 0.5rem;">
+                    <i data-lucide="sync" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"></i>
+                    ${step.workflow}
+                </div>
+            </div>
+        `;
+        stepsContainer.appendChild(item);
+    });
+
+    // Populate Developer skills
+    const devSkills = document.getElementById('developer-skills-tags');
+    techStack.forEach(skill => {
+        const tag = document.createElement('span');
+        tag.className = 'skill-tag';
+        tag.textContent = skill;
+        devSkills.appendChild(tag);
+    });
+
+    // Populate Contact Information
+    const contactInfoContainer = document.getElementById('contact-info-list-container');
+    const contactDetails = [
+        { icon: 'phone', title: 'Phone', value: '+91 8160682897' },
+        { icon: 'mail', title: 'Email', value: 'aishwaryzaveri@gmail.com' },
+        { icon: 'map-pin', title: 'Location', value: 'India' },
+    ];
+    contactDetails.forEach((item, i) => {
+        const c = cardColors[i % cardColors.length];
+        const el = document.createElement('div');
+        el.className = 'contact-info-item';
+        el.innerHTML = `
+            <div class="contact-info-icon" style="background: ${c.bg}; color: ${c.color};">
+                <i data-lucide="${item.icon}"></i>
+            </div>
+            <div class="contact-info-text">
+                <h4 style="color: white;">${item.title}</h4>
+                <p>${item.value}</p>
+            </div>
+        `;
+        contactInfoContainer.appendChild(el);
+    });
+
+    // Contact Form submission handler
+    const contactFormEl = document.getElementById('contact-form-el');
+    const successAlert = document.getElementById('contact-success-alert');
+    const errorAlert = document.getElementById('contact-error-alert');
+    const submitBtn = document.getElementById('contact-submit-btn');
+
+    contactFormEl.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Sending...</span>';
+        successAlert.style.display = 'none';
+        errorAlert.style.display = 'none';
+
+        // Simulate sending contact message
+        setTimeout(() => {
+            successAlert.style.display = 'flex';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span><i data-lucide="send" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"></i> Send Message</span>';
+            contactFormEl.reset();
+            lucide.createIcons();
+        }, 1200);
+    });
+
+    // ####### Video Controller & Camera code #######
+    const video = document.getElementById('qr-video');
+    const videoContainer = document.getElementById('video-container');
+    const camHasCamera = document.getElementById('cam-has-camera');
+    const camList = document.getElementById('cam-list');
+    const camHasFlash = document.getElementById('cam-has-flash');
+    const flashToggle = document.getElementById('flash-toggle');
+    const flashState = document.getElementById('flash-state');
+    const camQrResult = document.getElementById('cam-qr-result');
+    const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
+    const fileSelector = document.getElementById('file-selector');
+    const fileQrResult = document.getElementById('file-qr-result');
+
+    const statusDot = document.getElementById('status-dot');
+    const scanStatusText = document.getElementById('scan-status-text');
+    const camResultContainer = document.getElementById('cam-result-container');
+    const fileResultContainer = document.getElementById('file-result-container');
+    const camResultAccent = document.getElementById('cam-result-accent');
+    const fileResultAccent = document.getElementById('file-result-accent');
+
+    const camCopyBtn = document.getElementById('cam-copy-btn');
+    const camOpenBtn = document.getElementById('cam-open-btn');
+    const fileCopyBtn = document.getElementById('file-copy-btn');
+    const fileOpenBtn = document.getElementById('file-open-btn');
+
+    let currentCamText = '';
+    let currentFileText = '';
+
+    camCopyBtn.addEventListener('click', () => {
+        if (currentCamText) {
+            navigator.clipboard.writeText(currentCamText).then(() => {
+                camCopyBtn.innerHTML = '<i data-lucide="check" class="btn-icon"></i> Copied';
+                lucide.createIcons();
+                setTimeout(() => { 
+                    camCopyBtn.innerHTML = '<i data-lucide="copy" class="btn-icon"></i> Copy'; 
+                    lucide.createIcons();
+                }, 2000);
+            });
+        }
+    });
+
+    fileCopyBtn.addEventListener('click', () => {
+        if (currentFileText) {
+            navigator.clipboard.writeText(currentFileText).then(() => {
+                fileCopyBtn.innerHTML = '<i data-lucide="check" class="btn-icon"></i> Copied';
+                lucide.createIcons();
+                setTimeout(() => { 
+                    fileCopyBtn.innerHTML = '<i data-lucide="copy" class="btn-icon"></i> Copy'; 
+                    lucide.createIcons();
+                }, 2000);
+            });
+        }
+    });
+
+    function setResult(label, result, container, accentBar) {
+        console.log(result.data);
+        label.textContent = result.data;
+        if (container) {
+            container.classList.add('success-detection');
+        }
+        if (accentBar) {
+            accentBar.style.background = 'var(--green)';
+        }
+
+        const isCam = label === camQrResult;
+        const copyBtn = isCam ? camCopyBtn : fileCopyBtn;
+        const openBtn = isCam ? camOpenBtn : fileOpenBtn;
+
+        const isValidData = result.data && typeof result.data === 'string' && !result.data.startsWith('No QR') && result.data !== 'None' && result.data !== 'Scanning...';
+
+        if (isValidData) {
+            if (isCam) {
+                currentCamText = result.data;
+            } else {
+                currentFileText = result.data;
+            }
+            copyBtn.style.display = 'inline-flex';
+
+            const isUrl = /^(https?:\/\/)/i.test(result.data) || /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/i.test(result.data);
+            if (isUrl) {
+                let url = result.data;
+                if (!/^https?:\/\//i.test(url)) {
+                    url = 'https://' + url;
+                }
+                openBtn.href = url;
+                openBtn.style.display = 'inline-flex';
+            } else {
+                openBtn.style.display = 'none';
+            }
+
+            // Send scan to backend if user is logged in
+            if (currentUser && isCam) {
+                registerScan(result.data);
+            } else if (!currentUser && isCam) {
+                showToast('Login to record scans', 'warning');
+            }
+        } else {
+            copyBtn.style.display = 'none';
+            openBtn.style.display = 'none';
+            if (isCam) {
+                currentCamText = '';
+            } else {
+                currentFileText = '';
+            }
+        }
+
+        if (label === camQrResult) {
+            camQrResultTimestamp.textContent = new Date().toLocaleTimeString();
+            statusDot.classList.remove('active');
+            statusDot.style.background = 'var(--green)';
+            statusDot.style.boxShadow = '0 0 8px var(--green)';
+            scanStatusText.textContent = 'Active Scan';
+        }
+        
+        label.style.color = 'var(--green)';
+        clearTimeout(label.highlightTimeout);
+        label.highlightTimeout = setTimeout(() => {
+            label.style.color = 'inherit';
+            if (container) {
+                container.classList.remove('success-detection');
+            }
+            if (accentBar) {
+                accentBar.style.background = 'var(--cyan)';
+            }
+        }, 1200);
+    }
+
+    // ===== Scan Registration with Backend =====
+    const registerScan = async (qrValue) => {
+        if (!currentUser) return;
+        try {
+            const data = await apiCall('/scans', {
+                method: 'POST',
+                body: JSON.stringify({ qrValue }),
+            });
+            const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
+            showToast(`✓ Scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
+        } catch (err) {
+            if (err.status === 409) {
+                const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
+                showToast(`⚠️ ${slotIcon[err.timeSlot] || ''} Already scanned in ${err.timeSlot} today!`, 'warning');
+            } else {
+                const msg = err.error || err.message || 'Scan registration failed';
+                showToast(`✗ ${msg}`, 'error');
+            }
+        }
+    };
+
+    // ===== Analytics Functions =====
+    let analyticsPage = 1;
+    const ANALYTICS_LIMIT = 10;
+
+    const loadAnalytics = async (page = analyticsPage) => {
+        if (!currentUser) return;
+        try {
+            const slot = document.getElementById('slot-filter').value;
+            const q = document.getElementById('qr-search').value;
+            const [stats, scansData] = await Promise.all([
+                apiCall('/scans/analytics'),
+                apiCall(`/scans?page=${page}&limit=${ANALYTICS_LIMIT}&slot=${slot}&q=${encodeURIComponent(q)}`),
+            ]);
+
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-morning').textContent = (stats.bySlot || {}).morning || 0;
+            document.getElementById('stat-afternoon').textContent = (stats.bySlot || {}).afternoon || 0;
+            document.getElementById('stat-evening').textContent = (stats.bySlot || {}).evening || 0;
+            document.getElementById('stat-night').textContent = (stats.bySlot || {}).night || 0;
+            document.getElementById('stat-unique').textContent = stats.uniqueQRs || 0;
+
+            analyticsPage = scansData.page || 1;
+            renderScansTable(scansData.scans || [], scansData.total || 0, scansData.page || 1, scansData.totalPages || 1);
+        } catch (err) {
+            showToast('Failed to load analytics', 'error');
+        }
+    };
+
+    const renderScansTable = (scans, total, page, totalPages) => {
+        const tbody = document.getElementById('scans-table-body');
+
+        if (!scans.length) {
+            tbody.innerHTML = `<tr><td class="empty-message" colspan="4"><i data-lucide="inbox" style="width: 32px; height: 32px;"></i>No scans found</td></tr>`;
+            lucide.createIcons();
+            return;
+        }
+
+        const slotIcons = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
+        tbody.innerHTML = scans.map(s => {
+            const id = s._id || s.id;
+            const slotClass = `slot-badge slot-${s.timeSlot}`;
+            const time = new Date(s.scannedAt).toLocaleString();
+            return `<tr>
+                <td class="qr-cell">${s.qrValue}</td>
+                <td><span class="${slotClass}">${slotIcons[s.timeSlot] || ''} ${s.timeSlot}</span></td>
+                <td class="time-cell">${time}</td>
+                <td class="actions-cell">
+                    <button class="btn-icon-only edit-scan-btn" data-id="${id}" data-qr="${escapeHtml(s.qrValue)}" data-slot="${s.timeSlot}" data-time="${s.scannedAt}" title="Edit">
+                        <i data-lucide="pencil" style="width: 14px; height: 14px;"></i>
+                    </button>
+                    <button class="btn-icon-only delete-scan-btn" data-id="${id}" title="Delete">
+                        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+        lucide.createIcons();
+
+        renderPagination(total, page, totalPages);
+        attachScanActionHandlers();
+    };
+
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+
+    const renderPagination = (total, page, totalPages) => {
+        let container = document.getElementById('pagination-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'pagination-container';
+            container.className = 'pagination';
+            document.querySelector('.table-wrapper').after(container);
+        }
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+        let html = `<span class="pagination-info">Page ${page} of ${totalPages} (${total} total)</span><div class="pagination-btns">`;
+        if (page > 1) html += `<button class="pagination-btn" data-page="${page - 1}">Prev</button>`;
+        for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
+            html += `<button class="pagination-btn ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        if (page < totalPages) html += `<button class="pagination-btn" data-page="${page + 1}">Next</button>`;
+        html += '</div>';
+        container.innerHTML = html;
+
+        container.querySelectorAll('.pagination-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = parseInt(btn.dataset.page);
+                loadAnalytics(p);
+            });
+        });
+    };
+
+    const attachScanActionHandlers = () => {
+        document.querySelectorAll('.edit-scan-btn').forEach(btn => {
+            btn.removeEventListener('click', handleEditScan);
+            btn.addEventListener('click', handleEditScan);
+        });
+        document.querySelectorAll('.delete-scan-btn').forEach(btn => {
+            btn.removeEventListener('click', handleDeleteScan);
+            btn.addEventListener('click', handleDeleteScan);
+        });
+    };
+
+    const handleEditScan = (e) => {
+        const btn = e.currentTarget;
+        const id = btn.dataset.id;
+        const currentQr = btn.dataset.qr;
+        const currentSlot = btn.dataset.slot;
+        const currentTime = btn.dataset.time;
+
+        const newQr = prompt('Edit QR Value:', currentQr);
+        if (newQr === null) return;
+        const newSlot = prompt('Edit Time Slot (morning/afternoon/evening/night):', currentSlot);
+        if (newSlot === null) return;
+        const newTimeStr = prompt('Edit Date/Time (YYYY-MM-DD HH:MM):', new Date(currentTime).toISOString().slice(0, 16).replace('T', ' '));
+        if (newTimeStr === null) return;
+
+        apiCall(`/scans/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ qrValue: newQr, timeSlot: newSlot, scannedAt: newTimeStr }),
+        }).then(() => {
+            showToast('Scan updated', 'success');
+            loadAnalytics(analyticsPage);
+        }).catch(err => {
+            showToast(err.error || 'Failed to update scan', 'error');
+        });
+    };
+
+    const handleDeleteScan = (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (!confirm('Delete this scan record?')) return;
+        apiCall(`/scans/${id}`, { method: 'DELETE' })
+            .then(() => {
+                showToast('Scan deleted', 'success');
+                loadAnalytics(analyticsPage);
+            }).catch(err => {
+                showToast(err.error || 'Failed to delete scan', 'error');
+            });
+    };
+
+    document.getElementById('slot-filter').addEventListener('change', () => {
+        if (currentUser) loadAnalytics(1);
+    });
+
+    document.getElementById('qr-search').addEventListener('input', () => {
+        if (currentUser) loadAnalytics(1);
+    });
+
+    document.getElementById('refresh-analytics').addEventListener('click', () => {
+        if (currentUser) {
+            showToast('Refreshing...', 'success');
+            loadAnalytics(analyticsPage);
+        }
+    });
+
+    // ===== Admin Panel Functions =====
+    const loadAdminPanel = async () => {
+        if (!currentUser) return;
+        try {
+            const [stats, users] = await Promise.all([
+                apiCall('/admin/stats'),
+                apiCall('/admin/users'),
+            ]);
+            document.getElementById('admin-total-users').textContent = stats.totalUsers;
+            document.getElementById('admin-total-scans').textContent = stats.totalScans;
+            document.getElementById('admin-unique-qrs').textContent = stats.uniqueQRs;
+
+            const today = new Date();
+            const todayStr = today.toISOString().slice(0, 10);
+            const todayScans = (stats.bySlot ? Object.values(stats.bySlot).reduce((a, b) => a + b, 0) : 0);
+            document.getElementById('admin-scans-today').textContent = todayScans;
+
+            const tbody = document.getElementById('admin-users-body');
+            if (!users.users.length) {
+                tbody.innerHTML = `<tr><td class="empty-message" colspan="5">No users found</td></tr>`;
+            } else {
+                tbody.innerHTML = users.users.map(u => {
+                    const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-';
+                    return `<tr>
+                        <td>${escapeHtml(u.username)}</td>
+                        <td>${escapeHtml(u.email)}</td>
+                        <td>${date}</td>
+                        <td>${u.scanCount}</td>
+                        <td><button class="btn-icon-only delete-user-btn" data-id="${u.id}" title="Delete User"><i data-lucide="user-x" style="width: 14px; height: 14px;"></i></button></td>
+                    </tr>`;
+                }).join('');
+            }
+            lucide.createIcons();
+
+            document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm('Delete this user and all their scans?')) return;
+                    try {
+                        await apiCall(`/admin/users/${btn.dataset.id}`, { method: 'DELETE' });
+                        showToast('User deleted', 'success');
+                        loadAdminPanel();
+                    } catch (err) {
+                        showToast(err.error || 'Failed to delete user', 'error');
+                    }
+                });
+            });
+        } catch (err) {
+            showToast('Failed to load admin panel', 'error');
+        }
+    };
+
+    // Admin action buttons
+    document.getElementById('admin-clear-all-btn').addEventListener('click', async () => {
+        if (!confirm('Delete ALL scan records? This cannot be undone!')) return;
+        try {
+            const data = await apiCall('/scans/all/clear', { method: 'DELETE' });
+            showToast(data.message || 'All scans cleared', 'success');
+            loadAdminPanel();
+        } catch (err) {
+            showToast(err.error || 'Failed to clear scans', 'error');
+        }
+    });
+
+    document.getElementById('admin-export-json-btn').addEventListener('click', () => {
+        window.open(`${API_BASE}/scans/export?format=json`, '_blank');
+    });
+
+    document.getElementById('admin-export-csv-btn').addEventListener('click', () => {
+        window.open(`${API_BASE}/scans/export?format=csv`, '_blank');
+    });
+
+    document.getElementById('admin-refresh-btn').addEventListener('click', () => {
+        showToast('Refreshing...', 'success');
+        loadAdminPanel();
+    });
+
+    // ===== Change Password =====
+    const changePasswordModal = document.getElementById('change-password-modal');
+    const changePasswordForm = document.getElementById('change-password-form');
+    const changePasswordError = document.getElementById('change-password-error');
+    const changePasswordErrorText = document.getElementById('change-password-error-text');
+    const changePasswordSubmitBtn = document.getElementById('change-password-submit-btn');
+
+    document.getElementById('admin-change-password-btn').addEventListener('click', () => {
+        changePasswordModal.classList.add('active');
+        changePasswordError.classList.remove('active');
+        changePasswordForm.reset();
+    });
+
+    document.getElementById('close-change-password-modal').addEventListener('click', () => {
+        changePasswordModal.classList.remove('active');
+    });
+
+    changePasswordModal.addEventListener('click', (e) => {
+        if (e.target === changePasswordModal) changePasswordModal.classList.remove('active');
+    });
+
+    changePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        changePasswordSubmitBtn.disabled = true;
+        changePasswordSubmitBtn.textContent = 'Changing...';
+        changePasswordError.classList.remove('active');
+        try {
+            await apiCall('/auth/change-password', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    currentPassword: document.getElementById('change-current-password').value,
+                    newPassword: document.getElementById('change-new-password').value,
+                }),
+            });
+            changePasswordModal.classList.remove('active');
+            showToast('Password changed successfully', 'success');
+        } catch (err) {
+            const msg = err.error || err.message || 'Failed to change password';
+            changePasswordErrorText.textContent = msg;
+            changePasswordError.classList.add('active');
+        } finally {
+            changePasswordSubmitBtn.disabled = false;
+            changePasswordSubmitBtn.textContent = 'Change Password';
+        }
+    });
+
+    // ####### Web Cam Scanning #######
+
+    const scanner = new QrScanner(video, result => setResult(camQrResult, result, camResultContainer, camResultAccent), {
+        onDecodeError: error => {
+            if (camQrResult.textContent === 'None' || camQrResult.textContent.startsWith('No QR')) {
+                camQrResult.textContent = 'Scanning...';
+            }
+            statusDot.classList.remove('active');
+            statusDot.style.background = 'var(--orange)';
+            statusDot.style.boxShadow = 'none';
+            scanStatusText.textContent = 'Searching...';
+        },
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+    });
+
+    const updateFlashAvailability = () => {
+        scanner.hasFlash().then(hasFlash => {
+            camHasFlash.textContent = hasFlash ? 'Available' : 'Unavailable';
+            flashToggle.style.display = hasFlash ? 'inline-flex' : 'none';
+        });
+    };
+
+    const startCamera = () => {
+        document.getElementById('camera-status-badge').textContent = 'Starting...';
+        document.getElementById('camera-status-badge').style.background = 'rgba(250, 204, 21, 0.15)';
+        document.getElementById('camera-status-badge').style.color = 'var(--yellow)';
+        document.getElementById('camera-status-badge').style.borderColor = 'rgba(250, 204, 21, 0.3)';
+        
+        scanner.start().then(() => {
+            document.getElementById('camera-status-badge').textContent = 'Live';
+            document.getElementById('camera-status-badge').style.background = 'rgba(34, 197, 94, 0.1)';
+            document.getElementById('camera-status-badge').style.color = 'var(--green)';
+            document.getElementById('camera-status-badge').style.borderColor = 'rgba(34, 197, 94, 0.25)';
+            scanStatusText.textContent = 'Searching...';
+            updateFlashAvailability();
+            QrScanner.listCameras(true).then(cameras => {
+                while (camList.options.length > 0) {
+                    camList.remove(0);
+                }
+                let selectedIndex = 0;
+                cameras.forEach((camera, index) => {
+                    const option = document.createElement('option');
+                    option.value = camera.id;
+                    option.text = camera.label;
+                    
+                    // Prioritize environment/back/rear camera label matching
+                    if (/back|rear|environment/i.test(camera.label)) {
+                        selectedIndex = index;
+                    }
+                    
+                    camList.add(option);
+                });
+                if (cameras.length > 0) {
+                    camList.selectedIndex = selectedIndex;
+                }
+            });
+        }).catch(err => {
+            console.warn("Camera start failed", err);
+            document.getElementById('camera-status-badge').textContent = 'Blocked';
+            document.getElementById('camera-status-badge').style.background = 'rgba(249, 115, 22, 0.15)';
+            document.getElementById('camera-status-badge').style.color = 'var(--orange)';
+            document.getElementById('camera-status-badge').style.borderColor = 'rgba(249, 115, 22, 0.3)';
+            scanStatusText.textContent = 'No Permission';
+            camQrResult.textContent = 'Camera blocked or not found. Grant permissions and click Start.';
+        });
+    };
+
+    // Auto-start scanning on load disabled by user request
+    // startCamera();
+    document.getElementById('camera-status-badge').textContent = 'Paused';
+    document.getElementById('camera-status-badge').style.background = 'rgba(249, 115, 22, 0.15)';
+    document.getElementById('camera-status-badge').style.color = 'var(--orange)';
+    document.getElementById('camera-status-badge').style.borderColor = 'rgba(249, 115, 22, 0.3)';
+    scanStatusText.textContent = 'Stopped';
+
+    QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera ? 'Yes' : 'No');
+
+    // for debugging
+    window.scanner = scanner;
+
+    document.getElementById('scan-region-highlight-style-select').addEventListener('change', (e) => {
+        videoContainer.className = e.target.value;
+        scanner._updateOverlay(); 
+    });
+
+    document.getElementById('show-scan-region').addEventListener('change', (e) => {
+        const input = e.target;
+        const label = input.parentNode;
+        videoContainer.insertBefore(scanner.$canvas, null);
+        scanner.$canvas.style.display = input.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('inversion-mode-select').addEventListener('change', event => {
+        scanner.setInversionMode(event.target.value);
+    });
+
+    camList.addEventListener('change', event => {
+        scanner.setCamera(event.target.value).then(updateFlashAvailability);
+    });
+
+    flashToggle.addEventListener('click', () => {
+        scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
+    });
+
+    document.getElementById('start-button').addEventListener('click', () => {
+        startCamera();
+    });
+
+    document.getElementById('stop-button').addEventListener('click', () => {
+        scanner.stop();
+        document.getElementById('camera-status-badge').textContent = 'Paused';
+        document.getElementById('camera-status-badge').style.background = 'rgba(249, 115, 22, 0.15)';
+        document.getElementById('camera-status-badge').style.color = 'var(--orange)';
+        document.getElementById('camera-status-badge').style.borderColor = 'rgba(249, 115, 22, 0.3)';
+        statusDot.classList.remove('active');
+        statusDot.style.background = 'var(--orange)';
+        statusDot.style.boxShadow = 'none';
+        scanStatusText.textContent = 'Stopped';
+        camCopyBtn.style.display = 'none';
+        camOpenBtn.style.display = 'none';
+        currentCamText = '';
+    });
+
+    // ####### File Scanning #######
+
+    fileSelector.addEventListener('change', event => {
+        const file = fileSelector.files[0];
+        if (!file) {
+            return;
+        }
+        QrScanner.scanImage(file, { returnDetailedScanResult: true })
+            .then(result => setResult(fileQrResult, result, fileResultContainer, fileResultAccent))
+            .catch(e => setResult(fileQrResult, { data: e || 'No QR code found.' }, fileResultContainer, fileResultAccent));
+    });
+
+    // ===== Init on load =====
+    checkAuth();
+
+    // Check backend is reachable
+    setTimeout(async () => {
+        try {
+            await fetch(`${API_BASE}/auth/me`, { method: 'HEAD' });
+        } catch {
+            showToast('Backend not running — run: cd server && npm start', 'error');
+        }
+    }, 500);
+
+    // ===== Password Toggle =====
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.dataset.target);
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            const icon = btn.querySelector('.password-toggle-icon');
+            if (icon) {
+                icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+            }
+            btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            lucide.createIcons();
+        });
+    });
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+</script>
+</body>
+</html>
