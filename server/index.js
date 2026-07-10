@@ -13,24 +13,26 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Health check before DB (no DB required)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', env: { hasMongo: !!process.env.MONGODB_URI, hasJwt: !!process.env.JWT_SECRET } });
+});
+
 // Connect DB on first request (for serverless)
 app.use(async (req, res, next) => {
+  if (req.path === '/api/health') return next();
   try {
     await connectDb(process.env.MONGODB_URI);
     next();
   } catch (err) {
-    console.error('DB connection error:', err);
-    res.status(500).json({ error: 'Database connection failed' });
+    console.error('DB connection error:', err.message);
+    res.status(500).json({ error: 'Database connection failed', detail: err.message });
   }
 });
 
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
 app.use('/api/admin', adminRoutes);
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
 
 const distPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(distPath));

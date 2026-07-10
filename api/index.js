@@ -1,10 +1,12 @@
 const app = require('../server/index');
 
-let cachedApp = null;
-
 module.exports = async (req, res) => {
-  if (!cachedApp) {
-    cachedApp = app;
+  try {
+    await app(req, res);
+  } catch (err) {
+    console.error('Serverless handler error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error', detail: err.message });
+    }
   }
-  return cachedApp(req, res);
 };
