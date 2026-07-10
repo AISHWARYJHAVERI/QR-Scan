@@ -1,5 +1,5 @@
 const dns = require('dns');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient } = require('mongodb');
 
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
@@ -12,13 +12,10 @@ const connectDb = async (uri) => {
   if (connecting) return connecting;
   connecting = (async () => {
     client = new MongoClient(uri, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      },
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+      retryWrites: true,
     });
     await client.connect();
     db = client.db('qr_scanner');
