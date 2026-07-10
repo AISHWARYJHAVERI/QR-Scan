@@ -1,6 +1,7 @@
 {
   "name": "qr-scanner-server",
   "version": "1.0.0",
+  "type": "commonjs",
   "description": "Backend for QR Scanner with time-slot tracking",
   "main": "index.js",
   "scripts": {

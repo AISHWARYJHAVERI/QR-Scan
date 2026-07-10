@@ -51,6 +51,17 @@ router.post('/', async (req, res) => {
       });
     }
     const scan = await Scan.create({ qrValue, scannedBy });
+
+    // Push scan to QR App API (async, non-blocking)
+    const QR_APP_API = process.env.QR_APP_API_URL;
+    if (QR_APP_API) {
+      fetch(`${QR_APP_API}/api/scans`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrValue, scannedBy, timeSlot, scannedAt: scan.scannedAt }),
+      }).catch(err => console.error('QR App sync failed:', err.message));
+    }
+
     res.status(201).json({
       status: 'success',
       timeSlot,

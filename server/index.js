@@ -13,6 +13,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Connect DB on first request (for serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDb(process.env.MONGODB_URI);
+    next();
+  } catch (err) {
+    console.error('DB connection error:', err);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
 app.use('/api/admin', adminRoutes);
