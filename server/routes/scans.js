@@ -11,7 +11,6 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'qrValue required' });
     }
 
-    // Validate QR data — must be JSON with name and mobile fields
     let parsedName = null;
     try {
       const parsed = JSON.parse(qrValue);
@@ -24,7 +23,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid QR: not valid JSON' });
     }
 
-    let scannedBy = parsedName; // default: use name from QR
+    let scannedBy = parsedName;
     const header = req.headers.authorization;
     if (header && header.startsWith('Bearer ')) {
       try {
@@ -37,35 +36,27 @@ router.post('/', async (req, res) => {
           scannedBy = user._id.toString();
         }
       } catch (err) {
-        // Fallback to name from QR on invalid token
       }
     }
 
     const timeSlot = getTimeSlot();
     const existing = await Scan.findByQrAndSlot(qrValue, scannedBy, timeSlot);
     if (existing) {
-      // If anonymous already scanned, return success directly to satisfy uniqueness index without throwing error
       if (scannedBy === 'anonymous') {
         return res.json({
-          status: 'success',
-          timeSlot,
-          scan: {
-            id: existing._id,
-            qrValue: existing.qrValue,
-            timeSlot: existing.timeSlot,
-            scannedAt: existing.scannedAt,
-          },
+          _id: existing._id,
+          qrValue: existing.qrValue,
+          timeSlot: existing.timeSlot,
+          scannedAt: existing.scannedAt,
+          scannedBy: existing.scannedBy,
         });
       }
       return res.status(409).json({
-        status: 'duplicate',
-        timeSlot,
         message: `Already scanned in ${timeSlot} today`,
       });
     }
     const scan = await Scan.create({ qrValue, scannedBy });
 
-    // Push scan to QR App API (async, non-blocking)
     const QR_APP_API = process.env.QR_APP_API_URL;
     if (QR_APP_API) {
       const controller = new AbortController();
@@ -84,14 +75,11 @@ router.post('/', async (req, res) => {
     }
 
     res.status(201).json({
-      status: 'success',
-      timeSlot,
-      scan: {
-        id: scan._id,
-        qrValue: scan.qrValue,
-        timeSlot: scan.timeSlot,
-        scannedAt: scan.scannedAt,
-      },
+      _id: scan._id,
+      qrValue: scan.qrValue,
+      timeSlot: scan.timeSlot,
+      scannedAt: scan.scannedAt,
+      scannedBy: scan.scannedBy,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

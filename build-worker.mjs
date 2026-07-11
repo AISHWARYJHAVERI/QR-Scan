@@ -5,40 +5,39 @@ import * as esbuild from 'esbuild';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// 1. Read jsQR full implementation
-const jsQRPath = path.join(__dirname, 'node_modules', 'jsqr-es6', 'dist', 'jsQR.js');
-let jsQRCode = fs.readFileSync(jsQRPath, 'utf8');
+async function build() {
+    // Bundle worker.ts with zxing-wasm/reader using esbuild
+    const result = await esbuild.build({
+        entryPoints: [path.join(__dirname, 'src', 'worker.ts')],
+        bundle: true,
+        format: 'esm',
+        platform: 'browser',
+        target: 'es2017',
+        sourcemap: false,
+        minifyWhitespace: true,
+        minifyIdentifiers: true,
+        minifySyntax: true,
+        write: false,
+        external: [], // bundle everything including zxing-wasm
+    });
 
-// Remove export and sourcemap lines
-const lines = jsQRCode.split('\n');
-const cleaned = lines.filter(l => 
-  !l.startsWith('export { ') && 
-  !l.startsWith('//# sourceMappingURL=')
-).join('\n');
+    let code = result.outputFiles[0].text;
 
-// 2. Transpile worker.ts to JS using esbuild
-const workerResult = await esbuild.transform(
-  fs.readFileSync(path.join(__dirname, 'src', 'worker.ts'), 'utf8'),
-  { loader: 'ts', target: 'es2017' }
-);
-let workerJS = workerResult.code;
-// Remove the import statement (jsQR was already inlined)
-workerJS = workerJS.replace(/import\s+jsQR\s+from\s+['"]jsqr-es6['"];?\s*/g, '');
+    // Wrap in the createWorker export format (module worker)
+    const wrapped = 'export const createWorker=()=>new Worker(URL.createObjectURL(new Blob([`'
+        + code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\${/g, '\\${')
+        + '`]),{type:"module"}))';
 
-// 3. Combine: jsQR code + worker message handler
-const combined = cleaned + '\n' + workerJS;
+    // Write output files
+    fs.writeFileSync(path.join(__dirname, 'qr-scanner-worker.min.js'), wrapped);
+    fs.writeFileSync(path.join(__dirname, 'src', 'qr-scanner-worker.min.js'), wrapped);
 
-// 4. Wrap in the createWorker export format
-const wrapped = 'export const createWorker=()=>new Worker(URL.createObjectURL(new Blob([`'
-  + combined.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\${/g, '\\${')
-  + '`]),{type:"application/javascript"}))';
+    console.log('Worker built successfully!');
+    console.log('Wrapped size:', wrapped.length, 'bytes');
+    console.log('Raw bundle size:', code.length, 'bytes');
+}
 
-// 5. Write output files
-fs.writeFileSync(path.join(__dirname, 'qr-scanner-worker.min.js'), wrapped);
-fs.writeFileSync(path.join(__dirname, 'src', 'qr-scanner-worker.min.js'), wrapped);
-// Also save raw combined for debugging
-fs.writeFileSync(path.join(__dirname, 'src', 'qr-scanner-worker.raw.js'), combined);
-
-console.log('Worker built successfully!');
-console.log('Wrapped size:', wrapped.length, 'bytes');
-console.log('Raw size:', combined.length, 'bytes');
+build().catch(err => {
+    console.error('Build failed:', err);
+    process.exit(1);
+});

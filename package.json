@@ -32,19 +32,13 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.3.0",
-    "node-cron": "^4.6.0"
+    "node-cron": "^4.6.0",
+    "zxing-wasm": "^3.1.0"
   },
   "devDependencies": {
-    "@ampproject/rollup-plugin-closure-compiler": "^0.27.0",
-    "@rollup/plugin-alias": "^3.1.9",
-    "@rollup/plugin-node-resolve": "^13.3.0",
     "acorn": "^8.7.0",
     "autoprefixer": "^10.4.16",
-    "google-closure-compiler": "^20220104.0.0",
-    "jsqr-es6": "^1.4.0-1",
     "postcss": "^8.4.31",
-    "rollup": "^2.21.0",
-    "rollup-plugin-sourcemaps": "^0.6.2",
     "tailwindcss": "^3.3.5",
     "tslib": "^2.3.1",
     "typescript": "^5.7.3",

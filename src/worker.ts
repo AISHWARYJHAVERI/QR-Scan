@@ -1,93 +1,87 @@
-// @ts-ignore jsqr-es6 does not provide types currently
-import jsQR from 'jsqr-es6';
+import { readBarcodes, prepareZXingModule } from 'zxing-wasm/reader';
 
-type GrayscaleWeights = {
-    red: number,
-    green: number,
-    blue: number,
-    useIntegerApproximation: boolean,
-};
+// Preload the WASM module immediately (loads from CDN once, then caches)
+prepareZXingModule({ fireImmediately: false });
 
-let inversionAttempts: 'dontInvert' | 'onlyInvert' | 'attemptBoth' = 'attemptBoth';
-let grayscaleWeights: GrayscaleWeights = {
-    // weights for quick luma integer approximation (https://en.wikipedia.org/wiki/YUV#Full_swing_for_BT.601)
-    red: 77,
-    green: 150,
-    blue: 29,
-    useIntegerApproximation: true,
-};
+let tryInvert = false;
 
-self.onmessage = event => {
-    const id = event['data']['id'];
-    const type = event['data']['type'];
-    const data = event['data']['data'];
+self.onmessage = async (event) => {
+    const id = event.data.id;
+    const type = event.data.type;
+    const data = event.data.data;
 
     switch (type) {
         case 'decode':
-            decode(data, id);
-            break;
-        case 'grayscaleWeights':
-            setGrayscaleWeights(data);
+            await decode(data, id);
             break;
         case 'inversionMode':
             setInversionMode(data);
             break;
+        case 'grayscaleWeights':
+            break;
         case 'close':
-            // close after earlier messages in the event loop finished processing
             self.close();
             break;
     }
 };
 
-function decode(data: { data: Uint8ClampedArray, width: number, height: number }, requestId: number): void {
-    const rgbaData = data['data'];
-    const width = data['width'];
-    const height = data['height'];
-    const result = jsQR(rgbaData, width, height, {
-        inversionAttempts: inversionAttempts,
-        greyScaleWeights: grayscaleWeights,
-    });
-    if (!result) {
-        (self as unknown as Worker).postMessage({
-            id: requestId,
-            type: 'qrResult',
-            data: null,
+async function decode(data: { data: Uint8ClampedArray, width: number, height: number }, requestId: number): Promise<void> {
+    const rgbaData = data.data;
+    const width = data.width;
+    const height = data.height;
+
+    const imageData = new ImageData(
+        new Uint8ClampedArray(rgbaData),
+        width,
+        height
+    );
+
+    try {
+        const results = await readBarcodes(imageData, {
+            formats: ['QRCode'],
+            tryHarder: true,
+            tryRotate: true,
+            tryInvert,
+            tryDownscale: true,
         });
-        return;
+
+        if (results.length > 0) {
+            const result = results[0];
+            const pos = result.position;
+            (self as unknown as Worker).postMessage({
+                id: requestId,
+                type: 'qrResult',
+                data: result.text,
+                cornerPoints: [
+                    { x: pos.topLeft.x, y: pos.topLeft.y },
+                    { x: pos.topRight.x, y: pos.topRight.y },
+                    { x: pos.bottomRight.x, y: pos.bottomRight.y },
+                    { x: pos.bottomLeft.x, y: pos.bottomLeft.y },
+                ],
+            });
+            return;
+        }
+    } catch (e) {
+        console.error('ZXing WASM error:', e);
     }
 
     (self as unknown as Worker).postMessage({
         id: requestId,
         type: 'qrResult',
-        data: result.data,
-        // equivalent to cornerPoints of native BarcodeDetector
-        cornerPoints: [
-            result.location.topLeftCorner,
-            result.location.topRightCorner,
-            result.location.bottomRightCorner,
-            result.location.bottomLeftCorner,
-        ],
+        data: null,
     });
-}
-
-function setGrayscaleWeights(data: GrayscaleWeights) {
-    // update grayscaleWeights in a closure compiler compatible fashion
-    grayscaleWeights.red = data['red'];
-    grayscaleWeights.green = data['green'];
-    grayscaleWeights.blue = data['blue'];
-    grayscaleWeights.useIntegerApproximation = data['useIntegerApproximation'];
 }
 
 function setInversionMode(inversionMode: 'original' | 'invert' | 'both') {
     switch (inversionMode) {
         case 'original':
-            inversionAttempts = 'dontInvert';
+            tryInvert = false;
             break;
         case 'invert':
-            inversionAttempts = 'onlyInvert';
+            tryInvert = true;
             break;
         case 'both':
-            inversionAttempts = 'attemptBoth';
+            tryInvert = true;
             break;
         default:
             throw new Error('Invalid inversion mode');

@@ -1498,11 +1498,16 @@
             // Replace the optimistic temp scan with actual database record
             const idx = currentScansList.findIndex(s => s._id === tempId);
             if (idx !== -1) {
-                currentScansList[idx] = data;
+                currentScansList[idx] = { ...data, _id: data._id || data.id };
             }
 
             if (currentUser && document.getElementById('scans-table-body')) {
                 renderScansTable(currentScansList, currentScansList.length, 1, 1);
+                // Silently refresh uniqueQRs stat from server
+                apiCall('/scans/analytics').then(s => {
+                    const ue = document.getElementById('stat-unique');
+                    if (ue) ue.textContent = s.uniqueQRs || 0;
+                }).catch(() => {});
             }
 
             const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
