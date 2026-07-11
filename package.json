@@ -25,19 +25,19 @@
   },
   "homepage": "https://github.com/aishwaryzaveri/qr-scanner#readme",
   "dependencies": {
-    "@rollup/plugin-node-resolve": "^13.3.0",
     "@types/offscreencanvas": "^2019.6.4",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.3.0"
+    "mongodb": "^6.3.0",
+    "node-cron": "^4.6.0"
   },
   "devDependencies": {
     "@ampproject/rollup-plugin-closure-compiler": "^0.27.0",
     "@rollup/plugin-alias": "^3.1.9",
-    "@rollup/plugin-typescript": "^8.3.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
     "acorn": "^8.7.0",
     "autoprefixer": "^10.4.16",
     "google-closure-compiler": "^20220104.0.0",
