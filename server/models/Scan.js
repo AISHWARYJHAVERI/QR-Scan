@@ -17,6 +17,8 @@ const createScanCollection = async () => {
   const scans = db.collection('scans');
   await scans.createIndex({ qrValue: 1, scannedBy: 1, timeSlot: 1 }, { unique: true });
   await scans.createIndex({ scannedBy: 1 });
+  await scans.createIndex({ scannedAt: -1 });
+  await scans.createIndex({ qrValue: 1 });
   return scans;
 };
 

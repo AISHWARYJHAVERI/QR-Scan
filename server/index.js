@@ -42,6 +42,29 @@ app.get('*', (req, res) => {
   }
 });
 
+const cron = require('node-cron');
+const { getDb } = require('./models/db');
+
+// Schedule a daily task running at midnight (00:00) to clear scans older than 30 days
+cron.schedule('0 0 * * *', async () => {
+  console.log('⏰ Running daily cleanup job: Clearing scans older than 30 days...');
+  try {
+    const db = getDb();
+    if (!db) {
+      console.warn('⚠️ Cleanup skipped: Database not connected');
+      return;
+    }
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const result = await db.collection('scans').deleteMany({
+      scannedAt: { $lt: thirtyDaysAgo }
+    });
+    console.log(`✅ Cleanup complete: Removed ${result.deletedCount} old scans.`);
+  } catch (err) {
+    console.error('❌ Daily cleanup cron job failed:', err.message);
+  }
+});
+
 const start = async () => {
   try {
     await connectDb(process.env.MONGODB_URI);

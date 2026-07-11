@@ -1442,12 +1442,54 @@
     }
 
     // ===== Scan Registration with Backend =====
+    let currentScansList = [];
+
     const registerScan = async (qrValue) => {
+        // Optimistic UI Update: immediately prepend to local scans list and update UI
+        const timeSlot = (() => {
+            const hour = new Date().getHours();
+            if (hour >= 6 && hour < 12) return 'morning';
+            if (hour >= 12 && hour < 17) return 'afternoon';
+            if (hour >= 17 && hour < 21) return 'evening';
+            return 'night';
+        })();
+        const tempId = 'temp_' + Date.now();
+        const tempScan = {
+            _id: tempId,
+            qrValue: qrValue,
+            timeSlot: timeSlot,
+            scannedAt: new Date().toISOString()
+        };
+
+        // Add to active local list
+        currentScansList.unshift(tempScan);
+
+        // Pre-render the scans table immediately
+        if (currentUser && document.getElementById('scans-table-body')) {
+            renderScansTable(currentScansList, currentScansList.length, 1, 1);
+            // Optimistically update counts
+            const totalEl = document.getElementById('stat-total');
+            if (totalEl) totalEl.textContent = parseInt(totalEl.textContent || 0) + 1;
+            const slotEl = document.getElementById(`stat-${timeSlot}`);
+            if (slotEl) slotEl.textContent = parseInt(slotEl.textContent || 0) + 1;
+        }
+
         try {
             const data = await apiCall('/scans', {
                 method: 'POST',
                 body: JSON.stringify({ qrValue }),
             });
+
+            // Replace the optimistic temp scan with actual database record
+            const idx = currentScansList.findIndex(s => s._id === tempId);
+            if (idx !== -1) {
+                currentScansList[idx] = data;
+            }
+
+            if (currentUser && document.getElementById('scans-table-body')) {
+                renderScansTable(currentScansList, currentScansList.length, 1, 1);
+            }
+
             const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
             if (currentUser) {
                 showToast(`✓ Scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
@@ -1455,9 +1497,20 @@
                 showToast(`✓ Scanned anonymously in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
             }
         } catch (err) {
+            // Revert optimistic insert
+            currentScansList = currentScansList.filter(s => s._id !== tempId);
+            if (currentUser && document.getElementById('scans-table-body')) {
+                renderScansTable(currentScansList, currentScansList.length, 1, 1);
+                // Revert counts
+                const totalEl = document.getElementById('stat-total');
+                if (totalEl) totalEl.textContent = Math.max(0, parseInt(totalEl.textContent || 0) - 1);
+                const slotEl = document.getElementById(`stat-${timeSlot}`);
+                if (slotEl) slotEl.textContent = Math.max(0, parseInt(slotEl.textContent || 0) - 1);
+            }
+
             if (err.status === 409) {
                 const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
-                showToast(`⚠️ ${slotIcon[err.timeSlot] || ''} Already scanned in ${err.timeSlot} today!`, 'warning');
+                showToast(`⚠️ Already scanned in ${timeSlot} today!`, 'warning');
             } else {
                 const msg = err.error || err.message || 'Scan registration failed';
                 showToast(`✗ ${msg}`, 'error');
@@ -1487,7 +1540,8 @@
             document.getElementById('stat-unique').textContent = stats.uniqueQRs || 0;
 
             analyticsPage = scansData.page || 1;
-            renderScansTable(scansData.scans || [], scansData.total || 0, scansData.page || 1, scansData.totalPages || 1);
+            currentScansList = scansData.scans || [];
+            renderScansTable(currentScansList, scansData.total || 0, scansData.page || 1, scansData.totalPages || 1);
         } catch (err) {
             showToast('Failed to load analytics', 'error');
         }
