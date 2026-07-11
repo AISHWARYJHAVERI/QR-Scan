@@ -1,4 +1,5 @@
 import alias from '@rollup/plugin-alias';
+import resolve from '@rollup/plugin-node-resolve';
 import sourcemaps from 'rollup-plugin-sourcemaps';
 // ts config is a combination of tsconfig.json and overrides here. Type declarations file is generated separately via
 // tsc (see build script in package.json), because rollup can not emit multiple files if using output.file option.
@@ -34,7 +35,14 @@ export default () => [
             sourcemap: true,
         },
         plugins: [
-            typescript(),
+            resolve({
+                browser: true,
+                extensions: ['.mjs', '.js', '.ts', '.json'],
+            }),
+            typescript({
+                skipLibCheck: true,
+                target: 'ES2017',
+            }),
             sourcemaps(),
             closureCompiler({
                 //compilation_level: 'ADVANCED',

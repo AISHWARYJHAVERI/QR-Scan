@@ -5,3 +5,4 @@ tmp
 dist
 *.log
 *.err
+src/qr-scanner-worker.raw.js

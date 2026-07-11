@@ -10,8 +10,21 @@ router.post('/', async (req, res) => {
     if (!qrValue) {
       return res.status(400).json({ error: 'qrValue required' });
     }
-    
-    let scannedBy = 'anonymous';
+
+    // Validate QR data — must be JSON with name and mobile fields
+    let parsedName = null;
+    try {
+      const parsed = JSON.parse(qrValue);
+      if (parsed.name && parsed.mobile) {
+        parsedName = parsed.name;
+      } else {
+        return res.status(400).json({ error: 'Invalid QR: must contain name and mobile' });
+      }
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid QR: not valid JSON' });
+    }
+
+    let scannedBy = parsedName; // default: use name from QR
     const header = req.headers.authorization;
     if (header && header.startsWith('Bearer ')) {
       try {
@@ -24,7 +37,7 @@ router.post('/', async (req, res) => {
           scannedBy = user._id.toString();
         }
       } catch (err) {
-        // Fallback to anonymous on invalid token
+        // Fallback to name from QR on invalid token
       }
     }
 

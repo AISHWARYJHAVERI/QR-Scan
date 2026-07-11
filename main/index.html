@@ -1365,6 +1365,15 @@
         }
     });
 
+    // ===== QR Data Validation =====
+    function parseQRData(text) {
+        try {
+            const d = JSON.parse(text);
+            if (d.name && d.mobile) return { valid: true, name: d.name, mobile: d.mobile, raw: text };
+        } catch(e) {}
+        return { valid: false, raw: text };
+    }
+
     function setResult(label, result, container, accentBar) {
         console.log(result.data);
         label.textContent = result.data;
@@ -1379,6 +1388,7 @@
         const copyBtn = isCam ? camCopyBtn : fileCopyBtn;
         const openBtn = isCam ? camOpenBtn : fileOpenBtn;
 
+        const parsed = parseQRData(result.data);
         const isValidData = result.data && typeof result.data === 'string' && !result.data.startsWith('No QR') && result.data !== 'None' && result.data !== 'Scanning...';
 
         if (isValidData) {
@@ -1388,6 +1398,11 @@
                 currentFileText = result.data;
             }
             copyBtn.style.display = 'inline-flex';
+
+            // Show parsed name if valid, else raw value
+            if (parsed.valid) {
+                label.textContent = parsed.name;
+            }
 
             const isUrl = /^(https?:\/\/)/i.test(result.data) || /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/i.test(result.data);
             if (isUrl) {
@@ -1401,8 +1416,8 @@
                 openBtn.style.display = 'none';
             }
 
-            // Send scan to backend if it's a webcam scan and has changed (or after cooldown)
-            if (isCam) {
+            // Register scan only for valid QR data (has name + mobile) — both camera and file upload
+            if (parsed.valid) {
                 const now = Date.now();
                 if (result.data !== lastRegisteredValue || (now - lastRegisterTime > 5000)) {
                     lastRegisteredValue = result.data;
@@ -1491,11 +1506,10 @@
             }
 
             const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
-            if (currentUser) {
-                showToast(`✓ Scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
-            } else {
-                showToast(`✓ Scanned anonymously in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
-            }
+            let scannedName = null;
+            try { const d = JSON.parse(qrValue); if (d.name) scannedName = d.name; } catch(e) {}
+            const nameTag = scannedName ? ` ${scannedName}` : '';
+            showToast(`✓${nameTag} scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
         } catch (err) {
             // Revert optimistic insert
             currentScansList = currentScansList.filter(s => s._id !== tempId);
@@ -1562,7 +1576,7 @@
             const slotClass = `slot-badge slot-${s.timeSlot}`;
             const time = new Date(s.scannedAt).toLocaleString();
             return `<tr>
-                <td class="qr-cell">${s.qrValue}</td>
+                <td class="qr-cell">${(() => { try { const d = JSON.parse(s.qrValue); return d.name || s.qrValue; } catch(e) { return s.qrValue; } })()}</td>
                 <td><span class="${slotClass}">${slotIcons[s.timeSlot] || ''} ${s.timeSlot}</span></td>
                 <td class="time-cell">${time}</td>
                 <td class="actions-cell">
@@ -1948,6 +1962,11 @@
             showToast('Backend not running — run: cd server && npm start', 'error');
         }
     }, 500);
+
+    // Keep-alive ping every 4 minutes to prevent Vercel cold starts
+    setInterval(() => {
+        fetch(`${API_BASE}/health`).catch(() => {});
+    }, 240000);
 
     // ===== Password Toggle =====
     document.querySelectorAll('.password-toggle').forEach(btn => {
