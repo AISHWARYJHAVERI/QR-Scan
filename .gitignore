@@ -5,4 +5,5 @@ tmp
 dist
 *.log
 *.err
-src/qr-scanner-worker.raw.jscookies.txt  
+src/qr-scanner-worker.raw.js
+cookies.txt
