@@ -1817,6 +1817,8 @@
 
     // ####### Web Cam Scanning #######
 
+    QrScanner._disableBarcodeDetector = true; // Force JS Worker (reliable across all browsers)
+
     const scanner = new QrScanner(video, result => setResult(camQrResult, result, camResultContainer, camResultAccent), {
         onDecodeError: error => {
             if (camQrResult.textContent === 'None' || camQrResult.textContent.startsWith('No QR')) {

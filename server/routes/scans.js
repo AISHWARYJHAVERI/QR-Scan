@@ -68,11 +68,19 @@ router.post('/', async (req, res) => {
     // Push scan to QR App API (async, non-blocking)
     const QR_APP_API = process.env.QR_APP_API_URL;
     if (QR_APP_API) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
       fetch(`${QR_APP_API}/api/scans`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qrValue, scannedBy, timeSlot, scannedAt: scan.scannedAt }),
-      }).catch(err => console.error('QR App sync failed:', err.message));
+        signal: controller.signal,
+      }).then(r => {
+        if (!r.ok) console.error('QR App sync failed:', r.status, r.statusText);
+      }).catch(err => {
+        if (err.name === 'AbortError') console.error('QR App sync timeout (5s)');
+        else console.error('QR App sync failed:', err.message);
+      }).finally(() => clearTimeout(timeout));
     }
 
     res.status(201).json({
