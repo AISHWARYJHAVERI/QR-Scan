@@ -1336,6 +1336,8 @@
 
     let currentCamText = '';
     let currentFileText = '';
+    let lastRegisteredValue = '';
+    let lastRegisterTime = 0;
 
     camCopyBtn.addEventListener('click', () => {
         if (currentCamText) {
@@ -1399,11 +1401,14 @@
                 openBtn.style.display = 'none';
             }
 
-            // Send scan to backend if user is logged in
-            if (currentUser && isCam) {
-                registerScan(result.data);
-            } else if (!currentUser && isCam) {
-                showToast('Login to record scans', 'warning');
+            // Send scan to backend if it's a webcam scan and has changed (or after cooldown)
+            if (isCam) {
+                const now = Date.now();
+                if (result.data !== lastRegisteredValue || (now - lastRegisterTime > 5000)) {
+                    lastRegisteredValue = result.data;
+                    lastRegisterTime = now;
+                    registerScan(result.data);
+                }
             }
         } else {
             copyBtn.style.display = 'none';
@@ -1438,14 +1443,17 @@
 
     // ===== Scan Registration with Backend =====
     const registerScan = async (qrValue) => {
-        if (!currentUser) return;
         try {
             const data = await apiCall('/scans', {
                 method: 'POST',
                 body: JSON.stringify({ qrValue }),
             });
             const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
-            showToast(`✓ Scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
+            if (currentUser) {
+                showToast(`✓ Scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
+            } else {
+                showToast(`✓ Scanned anonymously in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
+            }
         } catch (err) {
             if (err.status === 409) {
                 const slotIcon = { morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙' };
