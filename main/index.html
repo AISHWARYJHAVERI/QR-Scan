@@ -1585,28 +1585,32 @@
     // ===== Analytics Functions =====
     let analyticsPage = 1;
     const ANALYTICS_LIMIT = 10;
+    let analyticsAbort = null;
+    let searchTimeout = null;
 
     const loadAnalytics = async (page = analyticsPage) => {
         if (!currentUser) return;
+        if (analyticsAbort) analyticsAbort.abort();
+        analyticsAbort = new AbortController();
         try {
             const slot = document.getElementById('slot-filter').value;
             const q = document.getElementById('qr-search').value;
-            const [stats, scansData] = await Promise.all([
-                apiCall('/scans/analytics'),
-                apiCall(`/scans?page=${page}&limit=${ANALYTICS_LIMIT}&slot=${slot}&q=${encodeURIComponent(q)}`),
-            ]);
+            const data = await apiCall(`/scans/dashboard?page=${page}&limit=${ANALYTICS_LIMIT}&slot=${slot}&q=${encodeURIComponent(q)}`, {
+                signal: analyticsAbort.signal
+            });
 
-            document.getElementById('stat-total').textContent = stats.total;
-            document.getElementById('stat-morning').textContent = (stats.bySlot || {}).morning || 0;
-            document.getElementById('stat-afternoon').textContent = (stats.bySlot || {}).afternoon || 0;
-            document.getElementById('stat-evening').textContent = (stats.bySlot || {}).evening || 0;
-            document.getElementById('stat-night').textContent = (stats.bySlot || {}).night || 0;
-            document.getElementById('stat-unique').textContent = stats.uniqueQRs || 0;
+            document.getElementById('stat-total').textContent = data.stats.total;
+            document.getElementById('stat-morning').textContent = (data.stats.bySlot || {}).morning || 0;
+            document.getElementById('stat-afternoon').textContent = (data.stats.bySlot || {}).afternoon || 0;
+            document.getElementById('stat-evening').textContent = (data.stats.bySlot || {}).evening || 0;
+            document.getElementById('stat-night').textContent = (data.stats.bySlot || {}).night || 0;
+            document.getElementById('stat-unique').textContent = data.stats.uniqueQRs || 0;
 
-            analyticsPage = scansData.page || 1;
-            currentScansList = scansData.scans || [];
-            renderScansTable(currentScansList, scansData.total || 0, scansData.page || 1, scansData.totalPages || 1);
+            analyticsPage = data.page || 1;
+            currentScansList = data.scans || [];
+            renderScansTable(currentScansList, data.total || 0, data.page || 1, data.totalPages || 1);
         } catch (err) {
+            if (err.name === 'AbortError') return;
             showToast('Failed to load analytics', 'error');
         }
     };
@@ -1733,7 +1737,10 @@
     });
 
     document.getElementById('qr-search').addEventListener('input', () => {
-        if (currentUser) loadAnalytics(1);
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (currentUser) loadAnalytics(1);
+        }, 400);
     });
 
     document.getElementById('refresh-analytics').addEventListener('click', () => {

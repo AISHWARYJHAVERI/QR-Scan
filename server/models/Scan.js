@@ -108,26 +108,21 @@ const Scan = {
 
   async getGlobalAnalytics() {
     const scans = await getCollection();
-    const [stats] = await scans.aggregate([
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          morning: { $sum: { $cond: [{ $eq: ['$timeSlot', 'morning'] }, 1, 0] } },
-          afternoon: { $sum: { $cond: [{ $eq: ['$timeSlot', 'afternoon'] }, 1, 0] } },
-          evening: { $sum: { $cond: [{ $eq: ['$timeSlot', 'evening'] }, 1, 0] } },
-          night: { $sum: { $cond: [{ $eq: ['$timeSlot', 'night'] }, 1, 0] } },
-          uniqueQRs: { $addToSet: '$qrValue' },
-          uniqueScannedBy: { $addToSet: '$scannedBy' },
-        },
-      },
-    ]).toArray();
-    if (!stats) return { total: 0, bySlot: { morning: 0, afternoon: 0, evening: 0, night: 0 }, uniqueQRs: 0, totalUsers: 0 };
+    const [total, bySlot, uniqueQRs, uniqueScannedBy] = await Promise.all([
+      scans.countDocuments(),
+      scans.aggregate([
+        { $group: { _id: '$timeSlot', count: { $sum: 1 } } },
+      ]).toArray(),
+      scans.distinct('qrValue'),
+      scans.distinct('scannedBy'),
+    ]);
+    const bySlotMap = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+    bySlot.forEach(s => { bySlotMap[s._id] = s.count; });
     return {
-      total: stats.total,
-      bySlot: { morning: stats.morning, afternoon: stats.afternoon, evening: stats.evening, night: stats.night },
-      uniqueQRs: stats.uniqueQRs.length,
-      totalUsers: stats.uniqueScannedBy.length,
+      total,
+      bySlot: bySlotMap,
+      uniqueQRs: uniqueQRs.length,
+      totalUsers: uniqueScannedBy.length,
     };
   },
 };

@@ -84,6 +84,23 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /scans/dashboard — merged analytics + scans list (1 round-trip)
+router.get('/dashboard', auth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const slot = req.query.slot || 'all';
+    const q = req.query.q || '';
+    const [stats, scansData] = await Promise.all([
+      Scan.getGlobalAnalytics(),
+      Scan.findAll({ page, limit, slot, q }),
+    ]);
+    return res.json({ stats, scans: scansData.scans, total: scansData.total, page: scansData.page, totalPages: scansData.totalPages });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /scans — all scans with pagination
 router.get('/', auth, async (req, res) => {
   try {
