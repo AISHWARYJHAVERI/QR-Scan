@@ -22,6 +22,12 @@
   padding: 0;
 }
 
+html {
+  background: #050816;
+  overscroll-behavior: none;
+  overflow-x: hidden;
+}
+
 body {
   font-family: "Chillax", sans-serif;
   color: var(--text-main);
@@ -29,8 +35,8 @@ body {
     radial-gradient(circle at top, rgba(255,255,255,0.03), transparent 20%),
     radial-gradient(circle at bottom right, rgba(99,102,241,0.12), transparent 18%),
     linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-dark-2) 45%, var(--bg-dark-3) 100%);
-  overflow-x: hidden;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,6 +85,9 @@ header p {
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
+}
+
+header .gradient-text {
   animation: hue 12s infinite linear;
 }
 
@@ -88,9 +97,9 @@ header p {
 }
 
 @keyframes scanning {
-  0% { top: 0%; }
-  50% { top: 100%; }
-  100% { top: 0%; }
+  0% { transform: translateY(0); }
+  50% { transform: translateY(1000px); }
+  100% { transform: translateY(0); }
 }
 
 /* Menu Dropdown Trigger and Popover */
@@ -126,9 +135,7 @@ header p {
 .menu-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 22, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(5, 8, 22, 0.92);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -147,13 +154,11 @@ header p {
   left: 0;
   transform: scale(0.9);
   transform-origin: top left;
-  background: rgba(15, 23, 42, 0.95);
+  background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1.25rem;
   width: 220px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   display: none;
   flex-direction: column;
   padding: 0.5rem;
@@ -206,8 +211,8 @@ header p {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .page-header {
@@ -254,7 +259,7 @@ header p {
 
 /* Glass Card Panels */
 .panel {
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(18, 26, 46, 0.88);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 2rem;
   padding: 2rem;
@@ -263,8 +268,6 @@ header p {
   flex-direction: column;
   gap: 1.5rem;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 .panel:hover {
@@ -1231,9 +1234,7 @@ header p {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 22, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(5, 8, 22, 0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1270,8 +1271,8 @@ header p {
   font-weight: 800;
 }
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.92) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .close-modal {
   position: absolute;
@@ -1583,7 +1584,7 @@ header p {
   border-radius: 1.25rem;
   overflow: hidden;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .scans-table {
   width: 100%;
@@ -1815,8 +1816,6 @@ header p {
   font-weight: 600;
   box-shadow: 0 8px 30px rgba(0,0,0,0.3);
   animation: toastIn 0.3s ease;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   max-width: 380px;
 }
 .toast-success {
@@ -1841,7 +1840,7 @@ header p {
 .toast-out {
   opacity: 0;
   transform: translateX(30px);
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 /* ===== Form Transitions ===== */
@@ -1849,8 +1848,8 @@ header p {
   animation: formSlideIn 0.3s ease;
 }
 @keyframes formSlideIn {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ===== Responsive ===== */
@@ -1929,4 +1928,14 @@ header p {
   .admin-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
   .menu-dropdown { width: 200px; right: 0; left: auto; }
   .modal-card { padding: 1.5rem 1rem; }
+}
+
+@media (hover: none) {
+  .btn:hover, .about-card:hover, .feature-item:hover,
+  .step-item:hover, .skill-tag:hover, .contact-info-item:hover,
+  .submit-btn:hover, .auth-btn-login:hover, .analytics-stat-card:hover,
+  .btn-danger:hover, .menu-trigger:hover, .btn-secondary:hover,
+  .btn-success:hover {
+    transform: none;
+  }
 }
