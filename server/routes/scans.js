@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
     let parsedName = null;
     try {
       const parsed = JSON.parse(qrValue);
-      if (parsed.name && parsed.mobile) {
+      if (parsed.name && (parsed.mobile || parsed.phone)) {
         parsedName = parsed.name;
         scannedBy = parsedName;
       }

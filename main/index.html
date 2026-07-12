@@ -1382,7 +1382,7 @@
     function parseQRData(text) {
         try {
             const d = JSON.parse(text);
-            if (d.name && d.mobile) return { valid: true, name: d.name, mobile: d.mobile, city: d.city || null, raw: text };
+            if (d.name && (d.mobile || d.phone)) return { valid: true, name: d.name, mobile: d.mobile || d.phone, city: d.city || null, raw: text };
         } catch(e) {}
         return { valid: false, raw: text };
     }
