@@ -1190,44 +1190,6 @@ header .gradient-text {
     width: 44px;
     height: 44px;
   }
-
-  .auth-header-btn {
-    position: relative;
-    right: auto;
-    top: auto;
-    transform: none;
-    grid-row: 3;
-    grid-column: 2;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    z-index: 999;
-    padding-right: 0.5rem;
-  }
-
-  .auth-user-name {
-    display: none !important;
-  }
-
-  .auth-btn {
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .auth-btn span {
-    display: none !important;
-  }
-
-  .auth-btn i {
-    margin: 0 !important;
-    width: 20px !important;
-    height: 20px !important;
-  }
 }
 
 /* ===== Auth Modal ===== */
