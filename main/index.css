@@ -1183,7 +1183,7 @@ header .gradient-text {
     justify-content: flex-start;
     align-items: center;
     z-index: 999;
-    padding-left: 0.5rem;
+    padding-left: 1rem;
   }
 
   .menu-trigger {
@@ -1835,7 +1835,6 @@ header .gradient-text {
 }
 @media (max-width: 768px) {
   header { padding-top: 2rem; }
-  .menu-container { left: 0.5rem; }
 
   .auth-user-name { display: inline !important; }
   .auth-btn {
