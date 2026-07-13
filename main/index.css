@@ -1190,6 +1190,20 @@ header .gradient-text {
     width: 44px;
     height: 44px;
   }
+
+  .auth-header-btn {
+    grid-row: 3;
+    grid-column: 2;
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    z-index: 999;
+    padding-right: 0.5rem;
+  }
 }
 
 /* ===== Auth Modal ===== */
@@ -1820,12 +1834,6 @@ header .gradient-text {
   .admin-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
-  .auth-header-btn {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-  }
   header { padding-top: 2rem; }
   .menu-container { left: 0.5rem; }
 
