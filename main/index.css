@@ -1204,6 +1204,11 @@ header .gradient-text {
     z-index: 999;
     padding-right: 0.5rem;
   }
+
+  .menu-dropdown {
+    left: -1rem;
+    width: calc(100vw - 2rem);
+  }
 }
 
 /* ===== Auth Modal ===== */
@@ -1895,7 +1900,7 @@ header .gradient-text {
   .scans-table { font-size: 0.72rem; }
   .scans-table th, .scans-table td { padding: 0.5rem 0.5rem; }
   .admin-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-  .menu-dropdown { width: 200px; right: 0; left: auto; }
+  .menu-dropdown { left: -0.75rem; width: calc(100vw - 1.5rem); }
   .modal-card { padding: 1.5rem 1rem; }
 }
 
