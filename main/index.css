@@ -1,46 +1,92 @@
 @import url('https://api.fontshare.com/v2/css?f[]=chillax@200,300,400,500,600,700,900&display=swap');
 
 :root {
-  --bg-dark: #050816;
-  --bg-dark-2: #090b16;
-  --bg-dark-3: #080912;
+  --font-family: 'Chillax', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bg-dark: #0a1028;
+  --bg-dark-2: #0d1730;
+  --bg-dark-3: #0b1326;
   --text-main: #f8fafc;
-  --text-muted: #8b98b8;
+  --text-muted: #94a3b8;
   --green: #22c55e;
-  --cyan: #22d3ee;
+  --cyan: #38bdf8;
+  --blue: #3b82f6;
   --yellow: #facc15;
   --orange: #f97316;
-  --primary: #22c55e;
-  --accent: #22d3ee;
+  --primary: #38bdf8;
+  --accent: #60a5fa;
   --warning: #facc15;
   --danger: #f97316;
+  font-family: var(--font-family);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html {
-  background: #050816;
+  background: #0a1028;
   overscroll-behavior: none;
   overflow-x: hidden;
 }
 
 body {
-  font-family: "Chillax", sans-serif;
-  color: var(--text-main);
-  background:
-    radial-gradient(circle at top, rgba(255,255,255,0.03), transparent 20%),
-    radial-gradient(circle at bottom right, rgba(99,102,241,0.12), transparent 18%),
-    linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-dark-2) 45%, var(--bg-dark-3) 100%);
+  font-family: var(--font-family);
+  color: #f8fafc;
+  background-color: #0a1028;
+  background-image: 
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 25%),
+    radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.1), transparent 28%),
+    linear-gradient(180deg, #0a1028 0%, #0d1730 45%, #0b1326 100%);
+  background-attachment: fixed;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 2.5rem 1rem;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Fixed Interactive WebGL Background */
+#molten-bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#molten-bg-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 3-Shade Blue Gradient Text Utilities */
+.gradient-heading,
+h1, h2, h3, h4, h5, h6,
+.section-title {
+  background: linear-gradient(135deg, #f0f9ff 0%, #bae6fd 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.animated-gradient,
+.gradient-text {
+  background: linear-gradient(135deg, #7dd3fc 0%, #3b82f6 50%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 12px rgba(56, 189, 248, 0.4));
+  font-weight: 700;
 }
 
 a {
@@ -53,6 +99,8 @@ a {
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 /* Header Styling */
@@ -62,6 +110,7 @@ header {
   flex-direction: column;
   gap: 0.5rem;
   position: relative;
+  z-index: 10;
 }
 
 header h1 {
@@ -78,22 +127,6 @@ header p {
   color: var(--text-muted);
   font-size: 1.05rem;
   font-weight: 300;
-}
-
-.gradient-text {
-  background-image: linear-gradient(125deg, var(--green), var(--cyan), var(--yellow), var(--orange));
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-}
-
-header .gradient-text {
-  animation: hue 12s infinite linear;
-}
-
-@keyframes hue {
-  from { filter: hue-rotate(0deg); }
-  to { filter: hue-rotate(-360deg); }
 }
 
 @keyframes scanning {
@@ -259,7 +292,9 @@ header .gradient-text {
 
 /* Glass Card Panels */
 .panel {
-  background: rgba(18, 26, 46, 0.88);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 2rem;
   padding: 2rem;
@@ -271,7 +306,8 @@ header .gradient-text {
 }
 
 .panel:hover {
-  box-shadow: 0 45px 130px rgba(34, 197, 94, 0.05);
+  box-shadow: 0 45px 130px rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.2);
 }
 
 .panel-title {

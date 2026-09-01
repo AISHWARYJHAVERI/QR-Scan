@@ -7,3 +7,4 @@ dist
 *.err
 src/qr-scanner-worker.raw.js
 cookies.txt
+.aider*
