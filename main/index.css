@@ -168,7 +168,7 @@ header p {
 .menu-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 22, 0.92);
+  background: transparent;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
