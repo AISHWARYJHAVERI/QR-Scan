@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({ username, email, password: hashed });
     const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: user._id, username: user.username, email: user.email, isAdmin: true } });
+    res.status(201).json({ token, user: { id: user._id, username: user.username, email: user.email, isAdmin: !!user.isAdmin } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email, isAdmin: true } });
+    res.json({ token, user: { id: user._id, username: user.username, email: user.email, isAdmin: !!user.isAdmin } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -604,12 +604,13 @@
                         <th>Email</th>
                         <th>Registered</th>
                         <th>Scans</th>
+                        <th>Admin</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="admin-users-body">
                     <tr>
-                        <td class="empty-message" colspan="5">
+                        <td class="empty-message" colspan="6">
                             <i data-lucide="inbox" style="width: 32px; height: 32px;"></i>
                             Loading users...
                         </td>
@@ -771,7 +772,7 @@
         if (user) {
             loginBtn.style.display = 'none';
             loggedInInfo.style.display = 'flex';
-            authUserName.textContent = user.username;
+            authUserName.textContent = user.isAdmin ? `${user.username} (Admin)` : user.username;
             document.querySelector('.menu-item[data-target="dashboard-section"]').style.display = 'none';
             document.querySelector('.menu-item[data-target="about-section"]').style.display = 'none';
             document.querySelector('.menu-item[data-target="features-section"]').style.display = 'none';
@@ -779,7 +780,7 @@
             document.querySelector('.menu-item[data-target="developer-section"]').style.display = 'none';
             document.querySelector('.menu-item[data-target="contact-section"]').style.display = 'none';
             analyticsMenuItem.style.display = 'flex';
-            adminMenuItem.style.display = 'flex';
+            adminMenuItem.style.display = user.isAdmin ? 'flex' : 'none';
         } else {
             loginBtn.style.display = 'flex';
             loggedInInfo.style.display = 'none';
@@ -1779,7 +1780,8 @@
 
     // ===== Admin Panel Functions =====
     const loadAdminPanel = async () => {
-        if (!currentUser) return;
+        if (!currentUser?.isAdmin) return;
+        const tbody = document.getElementById('admin-users-body');
         try {
             const [stats, users] = await Promise.all([
                 apiCall('/admin/stats'),
@@ -1794,18 +1796,31 @@
             const todayScans = (stats.bySlot ? Object.values(stats.bySlot).reduce((a, b) => a + b, 0) : 0);
             document.getElementById('admin-scans-today').textContent = todayScans;
 
-            const tbody = document.getElementById('admin-users-body');
             if (!users.users.length) {
-                tbody.innerHTML = `<tr><td class="empty-message" colspan="5">No users found</td></tr>`;
+                tbody.innerHTML = `<tr><td class="empty-message" colspan="6">No users found</td></tr>`;
             } else {
                 tbody.innerHTML = users.users.map(u => {
                     const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-';
+                    const isSelf = currentUser && u.id === currentUser.id;
+                    const adminBadge = u.isAdmin ? '<span class="admin-badge">Admin</span>' : '';
+                    let adminCell, actionCell;
+                    if (isSelf) {
+                        adminCell = adminBadge;
+                        actionCell = '<span class="empty-message" style="font-size:0.8rem;">You</span>';
+                    } else if (u.isAdmin) {
+                        adminCell = adminBadge;
+                        actionCell = `<button class="btn-icon-only revoke-admin-btn" data-id="${u.id}" title="Revoke Admin"><i data-lucide="shield-x" style="width: 14px; height: 14px;"></i></button>`;
+                    } else {
+                        adminCell = 'No';
+                        actionCell = `<button class="btn-icon-only grant-admin-btn" data-id="${u.id}" title="Grant Admin"><i data-lucide="shield-plus" style="width: 14px; height: 14px;"></i></button>`;
+                    }
                     return `<tr>
                         <td>${escapeHtml(u.username)}</td>
                         <td>${escapeHtml(u.email)}</td>
                         <td>${date}</td>
                         <td>${u.scanCount}</td>
-                        <td><button class="btn-icon-only delete-user-btn" data-id="${u.id}" title="Delete User"><i data-lucide="user-x" style="width: 14px; height: 14px;"></i></button></td>
+                        <td>${adminCell}</td>
+                        <td>${actionCell}<button class="btn-icon-only delete-user-btn" data-id="${u.id}" title="Delete User"><i data-lucide="user-x" style="width: 14px; height: 14px;"></i></button></td>
                     </tr>`;
                 }).join('');
             }
@@ -1823,13 +1838,47 @@
                     }
                 });
             });
+
+            document.querySelectorAll('.grant-admin-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm('Grant admin access to this user?\nThey will be able to manage users and clear all scans.')) return;
+                    try {
+                        await apiCall(`/admin/users/${btn.dataset.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ isAdmin: true }),
+                        });
+                        showToast('Admin access granted', 'success');
+                        loadAdminPanel();
+                    } catch (err) {
+                        showToast(err.error || 'Failed to grant admin', 'error');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.revoke-admin-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm('Revoke admin access from this user?')) return;
+                    try {
+                        await apiCall(`/admin/users/${btn.dataset.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ isAdmin: false }),
+                        });
+                        showToast('Admin access revoked', 'success');
+                        loadAdminPanel();
+                    } catch (err) {
+                        showToast(err.error || 'Failed to revoke admin', 'error');
+                    }
+                });
+            });
         } catch (err) {
+            tbody.innerHTML = `<tr><td class="empty-message" colspan="6">Failed to load admin panel: ${escapeHtml(err.error || 'server unreachable')}</td></tr>`;
             showToast('Failed to load admin panel', 'error');
         }
     };
 
     // Admin action buttons
     document.getElementById('admin-clear-all-btn').addEventListener('click', async () => {
+        if (!currentUser?.isAdmin) return showToast('Admin access required', 'error');
         if (!confirm('Delete ALL scan records? This cannot be undone!')) return;
         try {
             const data = await apiCall('/scans/all/clear', { method: 'DELETE' });
@@ -1841,14 +1890,17 @@
     });
 
     document.getElementById('admin-export-json-btn').addEventListener('click', () => {
+        if (!currentUser?.isAdmin) return showToast('Admin access required', 'error');
         window.open(`${API_BASE}/scans/export?format=json`, '_blank');
     });
 
     document.getElementById('admin-export-csv-btn').addEventListener('click', () => {
+        if (!currentUser?.isAdmin) return showToast('Admin access required', 'error');
         window.open(`${API_BASE}/scans/export?format=csv`, '_blank');
     });
 
     document.getElementById('admin-refresh-btn').addEventListener('click', () => {
+        if (!currentUser?.isAdmin) return showToast('Admin access required', 'error');
         showToast('Refreshing...', 'success');
         loadAdminPanel();
     });

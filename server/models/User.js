@@ -13,8 +13,10 @@ const createUserCollection = async () => {
 };
 
 const User = {
-  async create({ username, email, password, isAdmin = true }) {
+  async create({ username, email, password }) {
     const users = await createUserCollection();
+    const count = await users.countDocuments({});
+    const isAdmin = count === 0;
     const doc = {
       username,
       email,

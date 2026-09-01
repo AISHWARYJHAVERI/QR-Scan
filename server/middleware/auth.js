@@ -11,6 +11,17 @@ setInterval(() => {
   }
 }, 60 * 1000).unref();
 
+const requireAdmin = (req, res, next) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+const invalidateUser = (id) => {
+  if (id) userCache.delete(id);
+};
+
 const auth = async (req, res, next) => {
   try {
     const header = req.headers.authorization;
@@ -36,3 +47,6 @@ const auth = async (req, res, next) => {
 };
 
 module.exports = auth;
+module.exports.auth = auth;
+module.exports.requireAdmin = requireAdmin;
+module.exports.invalidateUser = invalidateUser;

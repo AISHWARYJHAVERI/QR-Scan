@@ -1,8 +1,10 @@
 const express = require('express');
-const auth = require('../middleware/auth');
+const middleware = require('../middleware/auth');
 const { Scan, getTimeSlot } = require('../models/Scan');
 
 const router = express.Router();
+const auth = middleware.auth;
+const requireAdmin = middleware.requireAdmin;
 
 router.post('/', async (req, res) => {
   try {
@@ -148,8 +150,8 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE /scans/all — clear all scans
-router.delete('/all/clear', auth, async (req, res) => {
+// DELETE /scans/all — clear all scans (admin only)
+router.delete('/all/clear', auth, requireAdmin, async (req, res) => {
   try {
     const count = await Scan.deleteAll();
     res.json({ message: `${count} scans cleared` });

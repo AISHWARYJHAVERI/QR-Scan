@@ -18,6 +18,25 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', env: { hasMongo: !!process.env.MONGODB_URI, hasJwt: !!process.env.JWT_SECRET } });
 });
 
+// Reset DB (empty all users + scans) — protected by RESET_KEY env var
+const handleReset = async (req, res) => {
+  const key = req.query.key || (req.body && req.body.key) || '';
+  if (!process.env.RESET_KEY || key !== process.env.RESET_KEY) {
+    return res.status(403).json({ error: 'Invalid or missing reset key' });
+  }
+  try {
+    await connectDb(process.env.MONGODB_URI);
+    const db = getDb();
+    const users = await db.collection('users').deleteMany({});
+    const scans = await db.collection('scans').deleteMany({});
+    res.json({ usersCleared: users.deletedCount, scansCleared: scans.deletedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+app.get('/api/reset', handleReset);
+app.post('/api/reset', handleReset);
+
 // Connect DB on first request (for serverless)
 app.use(async (req, res, next) => {
   if (req.path === '/api/health') return next();
