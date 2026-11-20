@@ -1,6 +1,8 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const middleware = require('../middleware/auth');
 const { Scan, getTimeSlot } = require('../models/Scan');
+const Control = require('../models/Control');
 
 const router = express.Router();
 const auth = middleware.auth;
@@ -24,19 +26,37 @@ router.post('/', async (req, res) => {
     } catch (e) {
       // Plain text QR — keep scannedBy as 'anonymous'
     }
+    let currentUser = null;
     const header = req.headers.authorization;
     if (header && header.startsWith('Bearer ')) {
       try {
         const token = header.split(' ')[1];
-        const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const User = require('../models/User');
-        const user = await User.findById(decoded.userId);
-        if (user) {
-          scannedBy = user._id.toString();
-        }
+        currentUser = await middleware.resolveUser(decoded);
+        if (currentUser) scannedBy = currentUser.id;
       } catch (err) {
+        // Invalid token — treat as an anonymous scan
       }
+    }
+
+    // Strict scan window (Asia/Kolkata). Server-side so it cannot be bypassed in the browser.
+    let windowWarning = null;
+    const settings = await Control.getSettings();
+    const info = Control.getTimeInfo();
+    if (!Control.isWithinWindow(settings, info)) {
+      const hasOverride = currentUser && (
+        currentUser.settingsAccess
+        || currentUser.scanOverride
+        || (settings.permissionMode === 'common-only' && currentUser.isAdmin)
+      );
+      if (!hasOverride) {
+        return res.status(403).json({
+          error: `Scanning is only allowed on ${Control.formatDate(settings.date)} (${settings.startTime}–${settings.endTime} IST).`,
+          code: 'SCAN_WINDOW_CLOSED',
+          allowed: { date: settings.date, startTime: settings.startTime, endTime: settings.endTime },
+        });
+      }
+      windowWarning = 'Outside allowed scan window — admin override applied';
     }
 
     const timeSlot = getTimeSlot();
@@ -49,6 +69,7 @@ router.post('/', async (req, res) => {
           timeSlot: existing.timeSlot,
           scannedAt: existing.scannedAt,
           scannedBy: existing.scannedBy,
+          warning: windowWarning,
         });
       }
       return res.status(409).json({
@@ -80,6 +101,7 @@ router.post('/', async (req, res) => {
       timeSlot: scan.timeSlot,
       scannedAt: scan.scannedAt,
       scannedBy: scan.scannedBy,
+      warning: windowWarning,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

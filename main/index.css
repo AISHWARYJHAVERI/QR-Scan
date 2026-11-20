@@ -16,7 +16,12 @@
   --accent: #60a5fa;
   --warning: #facc15;
   --danger: #f97316;
+  --error: #ef4444;
   font-family: var(--font-family);
+}
+
+.window-error {
+  color: var(--error) !important;
 }
 
 * {

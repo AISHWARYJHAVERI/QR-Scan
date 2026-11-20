@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Control = require('../models/Control');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -27,11 +28,25 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
+    const identifier = String(req.body.email || req.body.username || '').trim();
+    const password = req.body.password;
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Username/email and password required' });
     }
-    const user = await User.findByEmail(email);
+
+    // Control-page credentials are checked first. A wrong password falls through
+    // to the normal user database (so another account can share the same username).
+    if (identifier.toLowerCase() === Control.username.toLowerCase()
+      && await Control.verifyCredentials(identifier, password)) {
+      const token = jwt.sign({ userId: 'control', control: true }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.json({
+        token,
+        user: { id: 'control', username: Control.username, isAdmin: true, settingsAccess: true },
+        redirect: '/control.html',
+      });
+    }
+
+    const user = await User.findByEmail(identifier) || await User.findByUsername(identifier);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -39,8 +54,20 @@ router.post('/login', async (req, res) => {
     if (!match) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    const settings = await Control.getSettings();
+    const permission = (settings.permissions && settings.permissions[user._id.toString()]) || {};
     const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email, isAdmin: !!user.isAdmin } });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: !!user.isAdmin,
+        settingsAccess: !!permission.pageAccess,
+      },
+      redirect: null,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

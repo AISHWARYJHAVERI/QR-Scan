@@ -94,8 +94,8 @@
                         <span id="login-error-text"></span>
                     </div>
                     <div class="form-group">
-                        <label for="login-email">Email</label>
-                        <input id="login-email" type="email" placeholder="your@email.com" required>
+                        <label for="login-email">Username or Email</label>
+                        <input id="login-email" type="text" placeholder="Username or email" required autocomplete="username">
                     </div>
                     <div class="form-group">
                         <label for="login-password">Password</label>
@@ -904,12 +904,16 @@
             const data = await apiCall('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({
-                    email: document.getElementById('login-email').value,
+                    username: document.getElementById('login-email').value,
                     password: document.getElementById('login-password').value,
                 }),
             });
             setAuth(data.token, data.user);
             hideLoginModal();
+            if (data.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
             showToast(`Welcome back, ${data.user.username}!`, 'success');
             if (scanner) scanner.stop();
             navigateToSection('analytics-section');
@@ -1417,6 +1421,7 @@
 
     function setResult(label, result, container, accentBar) {
         console.log(result.data);
+        label.classList.remove('window-error');
         label.textContent = result.data;
         if (container) {
             container.classList.add('success-detection');
@@ -1463,10 +1468,10 @@
                 if (result.data !== lastRegisteredValue || (now - lastRegisterTime > 5000)) {
                     lastRegisteredValue = result.data;
                     lastRegisterTime = now;
-                    registerScan(result.data);
+                    registerScan(result.data, label);
                 }
             } else {
-                showConfirmPopup(result.data);
+                showConfirmPopup(result.data, label);
             }
         } else {
             copyBtn.style.display = 'none';
@@ -1502,7 +1507,7 @@
     // ===== Scan Registration with Backend =====
     let currentScansList = [];
 
-    const registerScan = async (qrValue) => {
+    const registerScan = async (qrValue, resultLabel = null) => {
         // Optimistic UI Update: immediately prepend to local scans list and update UI
         const timeSlot = (() => {
             const hour = new Date().getHours();
@@ -1558,6 +1563,9 @@
             try { const d = JSON.parse(qrValue); if (d.name) scannedName = d.name; } catch(e) {}
             const nameTag = scannedName ? ` ${scannedName}` : '';
             showToast(`✓${nameTag} scanned in ${slotIcon[data.timeSlot] || ''} ${data.timeSlot}!`, 'success');
+            if (data.warning) {
+                showToast(`⚠️ ${data.warning}`, 'warning');
+            }
         } catch (err) {
             // Revert optimistic insert
             currentScansList = currentScansList.filter(s => s._id !== tempId);
@@ -1576,15 +1584,28 @@
             } else {
                 const msg = err.error || err.message || 'Scan registration failed';
                 showToast(`✗ ${msg}`, 'error');
+                if (err.code === 'SCAN_WINDOW_CLOSED' && resultLabel) {
+                    resultLabel.classList.add('window-error');
+                    resultLabel.textContent = msg;
+                    if (resultLabel === camQrResult) {
+                        if (camCopyBtn) camCopyBtn.style.display = 'none';
+                        if (camOpenBtn) camOpenBtn.style.display = 'none';
+                    } else {
+                        if (fileCopyBtn) fileCopyBtn.style.display = 'none';
+                        if (fileOpenBtn) fileOpenBtn.style.display = 'none';
+                    }
+                }
             }
         }
     };
 
     // ===== Confirmation Popup for Plain QR Codes =====
     let pendingQrValue = null;
+    let pendingQrLabel = null;
 
-    function showConfirmPopup(qrValue) {
+    function showConfirmPopup(qrValue, label = null) {
         pendingQrValue = qrValue;
+        pendingQrLabel = label;
         document.getElementById('confirm-qr-preview').textContent = qrValue;
         document.getElementById('confirm-modal').classList.add('active');
     }
@@ -1592,14 +1613,16 @@
     document.getElementById('confirm-yes').addEventListener('click', () => {
         document.getElementById('confirm-modal').classList.remove('active');
         if (pendingQrValue) {
-            registerScan(pendingQrValue);
+            registerScan(pendingQrValue, pendingQrLabel);
         }
         pendingQrValue = null;
+        pendingQrLabel = null;
     });
 
     document.getElementById('confirm-no').addEventListener('click', () => {
         document.getElementById('confirm-modal').classList.remove('active');
         pendingQrValue = null;
+        pendingQrLabel = null;
     });
 
     // Close on overlay click
@@ -1607,6 +1630,7 @@
         if (e.target === e.currentTarget) {
             e.currentTarget.classList.remove('active');
             pendingQrValue = null;
+            pendingQrLabel = null;
         }
     });
 

@@ -33,6 +33,11 @@ const User = {
     return users.findOne({ email });
   },
 
+  async findByUsername(username) {
+    const users = await createUserCollection();
+    return users.findOne({ username });
+  },
+
   async findById(id) {
     const { ObjectId } = require('mongodb');
     const users = await createUserCollection();

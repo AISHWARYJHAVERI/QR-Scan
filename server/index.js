@@ -6,6 +6,7 @@ const { connectDb, closeDb } = require('./models/db');
 const authRoutes = require('./routes/auth');
 const scanRoutes = require('./routes/scans');
 const adminRoutes = require('./routes/admin');
+const controlRoutes = require('./routes/control');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ app.use(async (req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/control', controlRoutes);
 
 const distPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(distPath));
