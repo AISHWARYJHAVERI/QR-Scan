@@ -54,7 +54,7 @@
 - Frontend: `registerScan(qrValue, resultLabel)` (indexed from camera/file/plain-QR paths) shows the 403 message in the result box and hides copy/open buttons. Verified `npm run build` + `node -c` on all backend files.
 - Login field `login-email` MUST stay `type="text"` with label **"Username or Email"** — `type="email"` makes the browser reject plain `aishwary` before submitting. Control account logs in with plain text `aishwary`; normal users log in with their email. Frontend sends the value as `username` in the login body; backend resolves `email` first, then `username`.
 - The "Admin Sign In / Admin username not found." panel belongs to the **QR-App** project (`D:\D\project\qr app\src\App.jsx`, json-server `/admins`), NOT QR-Scan. The control account `aishwary` only exists in QR-Scan. Correct URL for it: `qr-scan-rho-green.vercel.app`.
-- `vercel.json` catch-all rewrite MUST exclude `control\\.html`, otherwise Vercel serves `/index.html` at `/control.html`.
+- `vercel.json` MUST use `routes` with `{ "handle": "filesystem" }` before the SPA fallback, otherwise Vercel serves `/index.html` at `/control.html`. A regex lookahead exclusion in `rewrites` does NOT work.
 
 ## History notes
 - Scanner worker moved from jsQR to ZXing WASM via `build-worker.mjs` + `src/worker.ts`; the generated worker is bundled, not a bare import.
