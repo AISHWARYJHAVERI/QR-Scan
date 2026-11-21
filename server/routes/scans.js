@@ -17,8 +17,10 @@ router.post('/', async (req, res) => {
 
     let scannedBy = 'anonymous';
     let parsedName = null;
+    let parsedQr = null;
     try {
       const parsed = JSON.parse(qrValue);
+      parsedQr = parsed;
       if (parsed.name && (parsed.mobile || parsed.phone)) {
         parsedName = parsed.name;
         scannedBy = parsedName;
@@ -43,12 +45,12 @@ router.post('/', async (req, res) => {
     let windowWarning = null;
     const settings = await Control.getSettings();
     const info = Control.getTimeInfo();
+    const hasOverride = currentUser && (
+      currentUser.settingsAccess
+      || currentUser.scanOverride
+      || (settings.permissionMode === 'common-only' && currentUser.isAdmin)
+    );
     if (!Control.isWithinWindow(settings, info)) {
-      const hasOverride = currentUser && (
-        currentUser.settingsAccess
-        || currentUser.scanOverride
-        || (settings.permissionMode === 'common-only' && currentUser.isAdmin)
-      );
       if (!hasOverride) {
         return res.status(403).json({
           error: Control.allowedMessage(settings),
@@ -64,6 +66,26 @@ router.post('/', async (req, res) => {
       windowWarning = 'Outside allowed scan window — admin override applied';
     }
 
+    // Per-QR date gate: a user QR is only valid on the dates embedded inside it.
+    // Admin QRs (type A) are exempt. Legacy QRs without `dates` are not blocked.
+    let qrDateWarning = null;
+    if (parsedQr && parsedQr.type !== 'A' && Array.isArray(parsedQr.dates) && parsedQr.dates.length > 0) {
+      const [y, m, d] = info.date.split('-');
+      const todayKey = `${d} ${m} ${y}`;
+      const allowedDates = parsedQr.dates.map(String);
+      if (!allowedDates.includes(todayKey)) {
+        if (!hasOverride) {
+          return res.status(403).json({
+            error: `QR is valid only on ${allowedDates.join(', ')} (${Control.timezone}).`,
+            code: 'QR_DATE_MISMATCH',
+            allowedDates,
+            scannedDate: todayKey,
+          });
+        }
+        qrDateWarning = 'Outside QR allowed date — admin override applied';
+      }
+    }
+
     const scanDate = info.date;
     const timeSlot = Control.getSlotKey(settings, info, true)
       || Control.getSlotKey(settings, info, false);
@@ -76,7 +98,7 @@ router.post('/', async (req, res) => {
           timeSlot: existing.timeSlot,
           scannedAt: existing.scannedAt,
           scannedBy: existing.scannedBy,
-          warning: windowWarning,
+          warning: windowWarning || qrDateWarning,
         });
       }
       return res.status(409).json({
@@ -108,7 +130,7 @@ router.post('/', async (req, res) => {
       timeSlot: scan.timeSlot,
       scannedAt: scan.scannedAt,
       scannedBy: scan.scannedBy,
-      warning: windowWarning,
+      warning: windowWarning || qrDateWarning,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
