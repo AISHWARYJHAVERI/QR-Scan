@@ -3,104 +3,277 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QR-Scan · Scan Control</title>
+  <title>⚡ Scan Control · QR-Scan</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="./index.css">
   <style>
-    :root { --bg:#050816; --card:rgba(15,23,42,.92); --line:rgba(148,163,184,.18); --text:#e2e8f0; --muted:#94a3b8; --green:#22c55e; --cyan:#22d3ee; --red:#ef4444; }
-    * { box-sizing:border-box; }
-    body { margin:0; min-height:100dvh; background:var(--bg); color:var(--text); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; padding:24px 16px 48px; }
-    .wrap { max-width:720px; margin:0 auto; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; }
-    h1 { font-size:20px; margin:0; letter-spacing:.2px; }
-    a.back { color:var(--cyan); text-decoration:none; font-size:13px; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
-    h2 { font-size:15px; margin:0 0 14px; color:#f8fafc; }
-    label { display:block; color:var(--muted); font-size:12px; margin:12px 0 5px; }
-    input, select { width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--line); background:rgba(2,6,23,.75); color:var(--text); font:inherit; outline:none; }
-    input:focus, select:focus { border-color:var(--cyan); }
-    input[readonly] { color:#cbd5e1; }
-    .row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    .slot-row { display:grid; grid-template-columns:1.2fr 1fr auto 1fr; align-items:end; gap:8px; padding:10px 0; border-bottom:1px solid var(--line); }
-    .slot-row:last-child { border-bottom:0; }
-    .slot-row .toggle { margin:0 0 5px; }
-    .slot-row span.sep { color:var(--muted); padding-bottom:11px; }
-    .slot-label { color:var(--text); font-weight:500; }
-    button { margin-top:14px; padding:10px 16px; border:0; border-radius:9px; background:var(--cyan); color:#04121a; font-weight:700; cursor:pointer; }
-    button:hover { filter:brightness(1.08); }
-    button.ghost { background:rgba(148,163,184,.16); color:var(--text); }
-    .toggle { display:flex; align-items:center; gap:10px; margin:8px 0; color:var(--muted); }
-    .toggle input { width:18px; height:18px; margin:0; accent-color:var(--green); }
-    .masked { display:flex; align-items:center; gap:10px; }
-    .masked span { letter-spacing:4px; font-size:18px; }
-    .hint { color:var(--muted); font-size:11px; margin-top:6px; }
-    table { width:100%; border-collapse:collapse; font-size:13px; }
-    th, td { text-align:left; padding:9px 6px; border-bottom:1px solid var(--line); }
-    th { color:var(--muted); font-weight:500; font-size:11px; }
-    td input { width:16px; height:16px; accent-color:var(--green); }
-    .msg { padding:10px 12px; border-radius:9px; margin-bottom:14px; display:none; }
-    .msg.show { display:block; }
-    .msg.ok { background:rgba(34,197,94,.14); color:#86efac; }
-    .msg.err { background:rgba(239,68,68,.14); color:#fca5a5; }
-    .denied { text-align:center; padding:40px 18px; }
-    @media (max-width:560px) { .row { grid-template-columns:1fr; } }
+    .control-wrap {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .control-head {
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .control-head h1 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+    .control-head p {
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .back-btn {
+      flex: 0 0 auto;
+      align-self: center;
+      margin-top: 0.5rem;
+      padding: 0.65rem 1.1rem;
+      font-size: 0.85rem;
+    }
+    .control-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .control-card h2 {
+      font-size: 1.05rem;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .control-card h2 i {
+      color: var(--cyan);
+    }
+    .control-card .btn-primary {
+      margin-top: 0.35rem;
+    }
+    .hint {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+    .modal-form .form-group select,
+    .modal-form .form-group input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 0.85rem 1.2rem;
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .modal-form .form-group select:focus,
+    .modal-form .form-group input:focus {
+      border-color: var(--green);
+      background: rgba(255,255,255,0.06);
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+    }
+    .modal-form .form-group input[readonly] {
+      color: #cbd5e1;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .password-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.75rem;
+    }
+    .password-row .form-group {
+      flex: 1;
+    }
+    .eye-btn {
+      flex: 0 0 auto;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+    .toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+    .slot-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr auto 1fr;
+      align-items: end;
+      gap: 0.75rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .slot-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .slot-row .form-group {
+      gap: 0.35rem;
+    }
+    .slot-row .form-group label {
+      font-size: 0.72rem;
+    }
+    .slot-row .form-group input {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.85rem;
+    }
+    .slot-row .toggle {
+      padding-bottom: 0.45rem;
+    }
+    .slot-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .sep {
+      color: var(--text-muted);
+      padding-bottom: 0.7rem;
+      font-size: 0.85rem;
+    }
+    .table-wrapper input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+    .denied {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    @media (max-width: 640px) {
+      .form-grid,
+      .slot-row {
+        grid-template-columns: 1fr;
+      }
+      .sep {
+        padding: 0;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Scan Control</h1>
-      <a class="back" href="/">← Back to QR-Scan app</a>
+  <div class="control-wrap">
+    <header class="control-head">
+      <h1>
+        <i data-lucide="sliders-horizontal" class="icon gradient-text" style="width: 2.2rem; height: 2.2rem;"></i>
+        <span class="gradient-text">Scan Control</span>
+      </h1>
+      <p>Schedule, credentials and permissions for QR-Scan</p>
+      <a class="btn btn-secondary back-btn" href="/">
+        <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i> Back to QR-Scan app
+      </a>
     </header>
 
-    <div id="msg" class="msg"></div>
+    <div id="toast-container" class="toast-container"></div>
 
-    <div id="denied" class="card denied" style="display:none">
-      <h2>Access required</h2>
+    <div id="denied" class="glass-card denied" style="display:none">
+      <h2 class="control-card-title"><i data-lucide="lock"></i> Access required</h2>
       <p class="hint">Log in on the main app with your control ID and password. You will be redirected here automatically.</p>
-      <a class="back" href="/">Go to login</a>
+      <a class="btn btn-primary back-btn" href="/">Go to login</a>
     </div>
 
-    <div id="content" style="display:none">
-      <section class="card">
-        <h2>Credentials</h2>
-        <label>ID</label>
-        <input id="account-id" type="text" readonly />
-        <label>Password</label>
-        <div class="masked"><span id="password-mask">••••••••</span></div>
-        <div class="hint">Stored as a secure hash. The saved password cannot be displayed; set a new one below.</div>
-        <label>New password</label>
-        <div class="masked">
-          <input id="new-password" type="password" placeholder="At least 6 characters" />
-          <button class="ghost" id="eye" type="button" style="margin:0">Show</button>
+    <div id="content" class="control-stack" style="display:none">
+      <section class="glass-card modal-form control-card">
+        <h2><i data-lucide="key-round"></i> Credentials</h2>
+        <div class="form-group">
+          <label>ID</label>
+          <input id="account-id" type="text" readonly />
         </div>
-        <label>Confirm new password</label>
-        <input id="confirm-password" type="password" placeholder="Repeat new password" />
-        <button id="save-password" type="button">Update password</button>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="password-mask" type="text" value="••••••••" readonly />
+          <div class="hint">Stored as a secure hash. The saved password cannot be displayed; set a new one below.</div>
+        </div>
+        <div class="form-group">
+          <label>New password</label>
+          <div class="password-row">
+            <div class="form-group">
+              <input id="new-password" type="password" placeholder="At least 6 characters" />
+            </div>
+            <button class="btn btn-secondary eye-btn" id="eye" type="button">Show</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Confirm new password</label>
+          <input id="confirm-password" type="password" placeholder="Repeat new password" />
+        </div>
+        <button id="save-password" class="btn btn-primary" type="button">
+          <i data-lucide="save"></i> Update password
+        </button>
       </section>
 
-      <section class="card">
-        <h2>Scan window</h2>
-        <div class="toggle"><input id="enabled" type="checkbox" /><span>Restrict scanning to this schedule</span></div>
-        <div class="row">
-          <div><label>Start date</label><input id="start-date" type="date" /></div>
-          <div><label>End date</label><input id="end-date" type="date" /></div>
+      <section class="glass-card modal-form control-card">
+        <h2><i data-lucide="calendar-days"></i> Scan schedule</h2>
+        <div class="toggle">
+          <input id="enabled" type="checkbox" />
+          <span>Restrict scanning to this schedule</span>
         </div>
-        <label>Allowed time slots (IST)</label>
-        <div id="slot-rows"></div>
-        <label>Restriction applies to</label>
-        <select id="mode">
-          <option value="common-only">Common users only (admins may scan with a warning)</option>
-          <option value="everyone">Everyone (admins need the scan override)</option>
-        </select>
-        <button id="save-settings" type="button">Save scan schedule</button>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Start date</label>
+            <input id="start-date" type="date" />
+          </div>
+          <div class="form-group">
+            <label>End date</label>
+            <input id="end-date" type="date" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Allowed time slots (IST)</label>
+          <div id="slot-rows"></div>
+        </div>
+        <div class="form-group">
+          <label>Restriction applies to</label>
+          <select id="mode">
+            <option value="common-only">Common users only (admins may scan with a warning)</option>
+            <option value="everyone">Everyone (admins need the scan override)</option>
+          </select>
+        </div>
+        <button id="save-settings" class="btn btn-primary" type="button">
+          <i data-lucide="calendar-check"></i> Save scan schedule
+        </button>
       </section>
 
-      <section class="card">
-        <h2>Admin permissions</h2>
-        <table>
-          <thead><tr><th>Admin</th><th>Scan override</th><th>Page access</th></tr></thead>
-          <tbody id="admin-rows"></tbody>
-        </table>
-        <button id="save-permissions" type="button">Save permissions</button>
+      <section class="glass-card modal-form control-card">
+        <h2><i data-lucide="users"></i> Admin permissions</h2>
+        <div class="table-wrapper">
+          <table class="scans-table">
+            <thead>
+              <tr>
+                <th>Admin</th>
+                <th>Scan override</th>
+                <th>Page access</th>
+              </tr>
+            </thead>
+            <tbody id="admin-rows"></tbody>
+          </table>
+        </div>
+        <button id="save-permissions" class="btn btn-primary" type="button">
+          <i data-lucide="shield-check"></i> Save permissions
+        </button>
       </section>
     </div>
   </div>
@@ -109,13 +282,19 @@
     const TOKEN_KEY = 'qr_scanner_token';
     const token = () => localStorage.getItem(TOKEN_KEY);
     const $ = id => document.getElementById(id);
-    const msg = $('msg');
+    const toastContainer = $('toast-container');
 
-    function show(text, ok = false) {
-      msg.textContent = text;
-      msg.className = 'msg show ' + (ok ? 'ok' : 'err');
-      clearTimeout(show.timer);
-      show.timer = setTimeout(() => { msg.className = 'msg'; }, 4000);
+    function showToast(message, type = 'success') {
+      const icons = { success: 'check-circle', warning: 'alert-triangle', error: 'x-circle' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:18px;height:18px;flex-shrink:0;"></i> ${message}`;
+      toastContainer.appendChild(toast);
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
     }
 
     async function api(path, options = {}) {
@@ -133,17 +312,17 @@
 
     function render(data) {
       $('account-id').value = data.account.username;
-      $('password-mask').textContent = data.account.passwordMasked || '••••••••';
+      $('password-mask').value = data.account.passwordMasked || '••••••••';
       const s = data.settings;
       $('enabled').checked = !!s.enabled;
       $('start-date').value = s.startDate || '';
       $('end-date').value = s.endDate || '';
       $('mode').value = s.permissionMode || 'common-only';
       $('slot-rows').innerHTML = (s.slots || []).map(slot => `<div class="slot-row" data-key="${slot.key}">
-        <label class="toggle"><input type="checkbox" class="slot-enabled" ${slot.enabled ? 'checked' : ''} /><span class="slot-label">${slot.label}</span></label>
-        <input type="time" class="slot-start" value="${slot.start}" />
+        <label class="toggle"><input type="checkbox" class="slot-enabled" ${slot.enabled ? 'checked' : ''} /><span class="slot-name">${slot.label}</span></label>
+        <div class="form-group"><label>Start</label><input type="time" class="slot-start" value="${slot.start}" /></div>
         <span class="sep">to</span>
-        <input type="time" class="slot-end" value="${slot.end}" />
+        <div class="form-group"><label>End</label><input type="time" class="slot-end" value="${slot.end}" /></div>
       </div>`).join('');
       admins = data.admins || [];
       $('admin-rows').innerHTML = admins.length
@@ -154,6 +333,7 @@
           </tr>`).join('')
         : '<tr><td colspan="3" class="hint">No admin accounts found.</td></tr>';
       $('content').style.display = '';
+      if (window.lucide) lucide.createIcons();
     }
 
     async function load() {
@@ -164,7 +344,7 @@
         if (err.status === 401 || err.status === 403) {
           $('denied').style.display = '';
         } else {
-          show(err.error || 'Cannot load settings');
+          showToast(err.error || 'Cannot load settings', 'error');
         }
       }
     }
@@ -178,8 +358,8 @@
 
     $('save-password').addEventListener('click', async () => {
       const newPassword = $('new-password').value;
-      if (newPassword.length < 6) return show('New password must be at least 6 characters');
-      if (newPassword !== $('confirm-password').value) return show('Passwords do not match');
+      if (newPassword.length < 6) return showToast('New password must be at least 6 characters', 'error');
+      if (newPassword !== $('confirm-password').value) return showToast('Passwords do not match', 'error');
       try {
         const res = await api('/control/password', {
           method: 'PUT',
@@ -187,16 +367,16 @@
         });
         $('new-password').value = '';
         $('confirm-password').value = '';
-        show(res.message || 'Password updated', true);
+        showToast(res.message || 'Password updated', 'success');
       } catch (err) {
-        show(err.error || 'Failed to update password');
+        showToast(err.error || 'Failed to update password', 'error');
       }
     });
 
     $('save-settings').addEventListener('click', async () => {
       const startDate = $('start-date').value;
       const endDate = $('end-date').value;
-      if (startDate && endDate && startDate > endDate) return show('Start date must be before end date');
+      if (startDate && endDate && startDate > endDate) return showToast('Start date must be before end date', 'error');
       const slots = Array.from(document.querySelectorAll('#slot-rows .slot-row')).map(row => ({
         key: row.dataset.key,
         enabled: !!row.querySelector('.slot-enabled').checked,
@@ -216,9 +396,9 @@
             },
           }),
         });
-        show(res.message || 'Settings saved', true);
+        showToast(res.message || 'Settings saved', 'success');
       } catch (err) {
-        show(err.error || 'Failed to save settings');
+        showToast(err.error || 'Failed to save settings', 'error');
       }
     });
 
@@ -235,9 +415,9 @@
           method: 'PUT',
           body: JSON.stringify({ permissions }),
         });
-        show(res.message || 'Permissions saved', true);
+        showToast(res.message || 'Permissions saved', 'success');
       } catch (err) {
-        show(err.error || 'Failed to save permissions');
+        showToast(err.error || 'Failed to save permissions', 'error');
       }
     });
 
