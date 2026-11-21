@@ -44,10 +44,21 @@ router.post('/', async (req, res) => {
     // Super admin (control account) bypasses every check silently. Admin QRs (type A)
     // bypass the schedule for everyone but raise a flag notification.
     const isSuperAdmin = !!(currentUser && currentUser.isSuperAdmin);
+    const isSuperQr = !!(parsedQr && parsedQr.app === 'QRAPP' && parsedQr.type === 'S');
     const isAdminQr = !!(parsedQr && parsedQr.app === 'QRAPP' && parsedQr.type === 'A');
+    const isOverrideQr = !!(parsedQr && parsedQr.app === 'QRAPP' && parsedQr.override === true);
 
     const settings = await Control.getSettings();
     const info = Control.getTimeInfo();
+
+    // Permissions synced from the QR App super-admin page. A normal admin whose
+    // "scan anytime" toggle is on is treated like an override QR silently.
+    const qrIdentity = String((parsedQr && (parsedQr.name || parsedQr.username)) || '').toLowerCase();
+    const qrPhone = String((parsedQr && parsedQr.phone) || '').toLowerCase();
+    const qrAppPermission = settings.qrAppPermissions && (
+      settings.qrAppPermissions[qrIdentity] || settings.qrAppPermissions[qrPhone]
+    );
+    const hasQrAppOverride = !!(qrAppPermission && qrAppPermission.scanOverride);
     const hasOverride = currentUser && (
       currentUser.settingsAccess
       || currentUser.scanOverride
@@ -56,7 +67,7 @@ router.post('/', async (req, res) => {
     const warnings = [];
 
     // QR validity gate: normal users may only scan QR-App QRs with allowed dates.
-    if (!isSuperAdmin) {
+    if (!isSuperAdmin && !isSuperQr && !hasQrAppOverride) {
       if (!parsedQr || parsedQr.app !== 'QRAPP') {
         return res.status(403).json({
           error: 'Only QR-App QR codes are allowed.',
@@ -64,8 +75,8 @@ router.post('/', async (req, res) => {
         });
       }
       if (isAdminQr) {
-        warnings.push('Admin QR — schedule bypassed');
-      } else {
+        if (!isOverrideQr) warnings.push('Admin QR — schedule bypassed');
+      } else if (!isOverrideQr && !hasQrAppOverride) {
         const qrDates = Control.resolveQrDates(parsedQr, settings);
         if (!qrDates.length) {
           return res.status(403).json({
@@ -101,7 +112,7 @@ router.post('/', async (req, res) => {
 
     // Strict schedule (Asia/Kolkata), server-side. QR dates and picked event dates
     // must both include today, and the current time must be inside an enabled slot.
-    if (!isSuperAdmin && !isAdminQr && settings.enabled) {
+    if (!isSuperAdmin && !isSuperQr && !isAdminQr && !isOverrideQr && !hasQrAppOverride && settings.enabled) {
       if (!Control.isEventDate(settings, info)) {
         if (!hasOverride) {
           return res.status(403).json({
@@ -128,7 +139,7 @@ router.post('/', async (req, res) => {
         warnings.push('Outside allowed scan slot — admin override applied');
       }
     }
-    const warning = isSuperAdmin || warnings.length === 0 ? undefined : warnings.join('; ');
+    const warning = isSuperAdmin || isSuperQr || isOverrideQr || hasQrAppOverride || warnings.length === 0 ? undefined : warnings.join('; ');
 
     const scanDate = info.date;
     const timeSlot = Control.getSlotKey(settings, info, true)

@@ -29,6 +29,7 @@ router.get('/settings', requireControl, async (req, res) => {
         slots: settings.slots,
         timezone: Control.timezone,
         permissionMode: settings.permissionMode || 'common-only',
+        qrAppPermissions: settings.qrAppPermissions || {},
       },
       account: { username: Control.username, passwordMasked: '••••••••' },
       admins,

@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
   timezone: TIMEZONE,
   permissionMode: 'common-only',
   permissions: {},
+  qrAppPermissions: {},
 };
 
 let seeded = false;
@@ -116,6 +117,9 @@ function normalizeSettings(doc) {
 
   if (!isMonth(base.eventMonth)) base.eventMonth = Number(base.eventDates[0].slice(5, 7));
   if (!isYear(base.eventYear)) base.eventYear = Number(base.eventDates[0].slice(0, 4));
+  if (!base.qrAppPermissions || typeof base.qrAppPermissions !== 'object' || Array.isArray(base.qrAppPermissions)) {
+    base.qrAppPermissions = {};
+  }
   return base;
 }
 
@@ -286,6 +290,7 @@ const publicSettings = (doc) => {
     timezone: TIMEZONE,
     permissionMode: settings.permissionMode === 'everyone' ? 'everyone' : 'common-only',
     permissions: settings.permissions || {},
+    qrAppPermissions: settings.qrAppPermissions || {},
     updatedAt: doc && doc.updatedAt || null,
   };
 };
@@ -347,7 +352,12 @@ const Control = {
   async updateSettings(patch) {
     await ensureSeeded();
     const current = await this.getSettings();
-    const next = { ...current, slots: cloneSlots(current.slots), eventDates: [...current.eventDates] };
+    const next = {
+      ...current,
+      slots: cloneSlots(current.slots),
+      eventDates: [...current.eventDates],
+      qrAppPermissions: { ...(current.qrAppPermissions || {}) },
+    };
 
     if (typeof patch.enabled === 'boolean') next.enabled = patch.enabled;
     if (isMonth(patch.eventMonth)) next.eventMonth = Number(patch.eventMonth);
@@ -382,6 +392,9 @@ const Control = {
     }
     if (patch.permissions && typeof patch.permissions === 'object' && !Array.isArray(patch.permissions)) {
       next.permissions = patch.permissions;
+    }
+    if (patch.qrAppPermissions && typeof patch.qrAppPermissions === 'object' && !Array.isArray(patch.qrAppPermissions)) {
+      next.qrAppPermissions = patch.qrAppPermissions;
     }
 
     const db = getDb();

@@ -21,8 +21,38 @@ const todayParts = () => {
   return parts;
 };
 
+const normalizePermissions = (value) => {
+  const result = {};
+  const put = (aliases, permission) => {
+    for (const alias of aliases) {
+      const key = String(alias || '').trim().toLowerCase();
+      if (key) result[key] = permission;
+    }
+  };
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (!item) continue;
+      const permission = {
+        scanOverride: !!item.scanOverride,
+        pageAccess: !!item.pageAccess,
+      };
+      put([item.username, item.name, item.phone, item.id, (item.username && item.username.split('@')[0])], permission);
+    }
+  } else if (value && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      if (!item) continue;
+      const permission = {
+        scanOverride: !!item.scanOverride,
+        pageAccess: !!item.pageAccess,
+      };
+      put([item.username, item.name, item.phone, key], permission);
+    }
+  }
+  return result;
+};
+
 // Called by the QR App server after Event Dates are saved.
-// Keeps the scanner window in sync with the days embedded in every QR.
+// Keeps the scanner window and admin permissions in sync.
 router.post('/sync-window', async (req, res) => {
   if (req.get('x-sync-key') !== SYNC_KEY) {
     return res.status(401).json({ error: 'Invalid sync key' });
@@ -78,6 +108,10 @@ router.post('/sync-window', async (req, res) => {
         return { ...defs[i], start, end, enabled: true };
       });
     }
+    if (body.permissions !== undefined) {
+      patch.qrAppPermissions = normalizePermissions(body.permissions);
+    }
+
     const settings = await Control.updateSettings(patch);
     res.json({ ok: true, startDate, endDate, eventDates, times, timezone: TIMEZONE, settings });
   } catch (err) {
