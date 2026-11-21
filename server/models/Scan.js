@@ -4,15 +4,41 @@ const { ObjectId } = require('mongodb');
 let _collection = null;
 let _indexesEnsured = false;
 
+const isLegacyUniqueKey = (key) => {
+  if (!key || Array.isArray(key)) return false;
+  const fields = Object.keys(key);
+  return fields.length === 3
+    && fields.includes('qrValue')
+    && fields.includes('scannedBy')
+    && fields.includes('timeSlot');
+};
+
+async function ensureIndexes(scans) {
+  const indexes = await scans.indexes();
+  const legacy = indexes.find(idx => isLegacyUniqueKey(idx.key));
+  if (legacy && legacy.name) {
+    try {
+      await scans.dropIndex(legacy.name);
+      console.log('Dropped legacy scan dedup index');
+    } catch (err) {
+      console.warn('Could not drop legacy scan dedup index:', err.message);
+    }
+  }
+  await scans.createIndex(
+    { qrValue: 1, scannedBy: 1, scanDate: 1, timeSlot: 1 },
+    { unique: true, name: 'qrValue_1_scannedBy_1_scanDate_1_timeSlot_1' }
+  );
+  await scans.createIndex({ scannedBy: 1 });
+  await scans.createIndex({ scannedAt: -1 });
+  await scans.createIndex({ qrValue: 1 });
+}
+
 async function getCollection() {
   if (_collection) return _collection;
   const db = getDb();
   _collection = db.collection('scans');
   if (!_indexesEnsured) {
-    await _collection.createIndex({ qrValue: 1, scannedBy: 1, timeSlot: 1 }, { unique: true });
-    await _collection.createIndex({ scannedBy: 1 });
-    await _collection.createIndex({ scannedAt: -1 });
-    await _collection.createIndex({ qrValue: 1 });
+    await ensureIndexes(_collection);
     _indexesEnsured = true;
   }
   return _collection;
@@ -27,17 +53,20 @@ const getTimeSlot = () => {
 };
 
 const Scan = {
-  async create({ qrValue, scannedBy }) {
+  async create({ qrValue, scannedBy, scanDate, timeSlot }) {
     const scans = await getCollection();
-    const timeSlot = getTimeSlot();
-    const doc = { qrValue, scannedBy, timeSlot, scannedAt: new Date() };
+    const slot = timeSlot || getTimeSlot();
+    const date = scanDate || new Date().toISOString().slice(0, 10);
+    const doc = { qrValue, scannedBy, scanDate: date, timeSlot: slot, scannedAt: new Date() };
     const result = await scans.insertOne(doc);
     return { ...doc, _id: result.insertedId };
   },
 
-  async findByQrAndSlot(qrValue, scannedBy, timeSlot) {
+  async findByQrAndSlot(qrValue, scannedBy, timeSlot, scanDate) {
     const scans = await getCollection();
-    return scans.findOne({ qrValue, scannedBy, timeSlot });
+    const filter = { qrValue, scannedBy, timeSlot };
+    if (scanDate) filter.scanDate = scanDate;
+    return scans.findOne(filter);
   },
 
   async findByUser(scannedBy) {

@@ -6,11 +6,18 @@ const USERNAME = 'aishwary';
 const SEED_HASH = '$2a$10$ma6fAkmZ5s7D5051oJrAv.GvPx/9xuJ2okwBScsjRsRkeZ2qNycHO';
 const TIMEZONE = 'Asia/Kolkata';
 
+const DEFAULT_SLOTS = [
+  { key: 'morning', label: 'Morning', start: '09:00', end: '12:00', enabled: true },
+  { key: 'afternoon', label: 'Afternoon', start: '13:00', end: '16:00', enabled: true },
+  { key: 'evening', label: 'Evening', start: '17:00', end: '20:00', enabled: true },
+  { key: 'night', label: 'Night', start: '21:00', end: '23:00', enabled: true },
+];
+
 const DEFAULT_SETTINGS = {
   enabled: true,
-  date: '2026-11-21',
-  startTime: '00:00',
-  endTime: '23:59',
+  startDate: '2026-11-21',
+  endDate: '2026-11-21',
+  slots: DEFAULT_SLOTS,
   timezone: TIMEZONE,
   permissionMode: 'common-only',
   permissions: {},
@@ -34,9 +41,33 @@ async function ensureSeeded() {
   }
   const settings = db.collection('scanSettings');
   if (!(await settings.findOne({ key: 'main' }))) {
-    await settings.insertOne({ key: 'main', ...DEFAULT_SETTINGS, updatedAt: new Date() });
+    await settings.insertOne({ key: 'main', ...DEFAULT_SETTINGS, slots: cloneSlots(DEFAULT_SLOTS), updatedAt: new Date() });
   }
   seeded = true;
+}
+
+function cloneSlots(slots) {
+  return slots.map(s => ({ ...s }));
+}
+
+function normalizeSettings(doc) {
+  const base = { ...DEFAULT_SETTINGS, ...(doc || {}) };
+  const legacyDate = /^\d{4}-\d{2}-\d{2}$/.test(String(doc && doc.date || '')) ? doc.date : '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(base.startDate || ''))) base.startDate = legacyDate || DEFAULT_SETTINGS.startDate;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(base.endDate || ''))) base.endDate = legacyDate || DEFAULT_SETTINGS.endDate;
+
+  const incoming = Array.isArray(base.slots) ? base.slots : [];
+  base.slots = DEFAULT_SLOTS.map((def) => {
+    const found = incoming.find(s => s && s.key === def.key) || {};
+    return {
+      key: def.key,
+      label: def.label,
+      start: toMinutes(found.start) !== null ? found.start : def.start,
+      end: toMinutes(found.end) !== null ? found.end : def.end,
+      enabled: typeof found.enabled === 'boolean' ? found.enabled : def.enabled,
+    };
+  });
+  return base;
 }
 
 const toMinutes = (value) => {
@@ -48,11 +79,23 @@ const toMinutes = (value) => {
   return hours * 60 + minutes;
 };
 
+const isDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+
 const formatDate = (value) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
-  if (!match) return String(value || '');
+  if (!isDate(value)) return String(value || '');
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${Number(match[3])} ${months[Number(match[2]) - 1] || match[2]} ${match[1]}`;
+};
+
+const formatTime = (value) => {
+  const minutes = toMinutes(value);
+  if (minutes === null) return String(value || '');
+  const hours24 = Math.floor(minutes / 60);
+  const mins = String(minutes % 60).padStart(2, '0');
+  const suffix = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:${mins} ${suffix}`;
 };
 
 const getTimeInfo = () => {
@@ -75,33 +118,72 @@ const getTimeInfo = () => {
   };
 };
 
-const isWithinWindow = (settings, info = getTimeInfo()) => {
-  if (!settings.enabled) return true;
-  if (settings.date && info.date !== settings.date) return false;
-  const start = toMinutes(settings.startTime);
-  const end = toMinutes(settings.endTime);
-  if (start === null || end === null) return true;
-  if (end >= start) return info.minutes >= start && info.minutes <= end;
-  return info.minutes >= start || info.minutes <= end;
+const inTimeRange = (minutes, slot) => {
+  const start = toMinutes(slot.start);
+  const end = toMinutes(slot.end);
+  if (start === null || end === null) return false;
+  if (end >= start) return minutes >= start && minutes <= end;
+  return minutes >= start || minutes <= end;
 };
 
-const publicSettings = (doc) => ({
-  enabled: !!doc.enabled,
-  date: doc.date || '',
-  startTime: doc.startTime || '00:00',
-  endTime: doc.endTime || '23:59',
-  timezone: TIMEZONE,
-  permissionMode: doc.permissionMode === 'everyone' ? 'everyone' : 'common-only',
-  permissions: doc.permissions || {},
-  updatedAt: doc.updatedAt || null,
-});
+const getSlotKey = (settings, info = getTimeInfo(), respectEnabled = true) => {
+  if (respectEnabled && isDate(settings.startDate) && isDate(settings.endDate)) {
+    if (info.date < settings.startDate || info.date > settings.endDate) return null;
+  }
+  const slots = Array.isArray(settings.slots) ? settings.slots : [];
+  const match = slots.find(s => (!respectEnabled || s.enabled) && inTimeRange(info.minutes, s));
+  if (match) return match.key;
+  if (respectEnabled) return null;
+  // Fallback for admin overrides outside every configured window.
+  const minutes = info.minutes;
+  if (minutes >= 9 * 60 && minutes < 13 * 60) return 'morning';
+  if (minutes >= 13 * 60 && minutes < 17 * 60) return 'afternoon';
+  if (minutes >= 17 * 60 && minutes < 21 * 60) return 'evening';
+  return 'night';
+};
+
+const isWithinWindow = (settings, info = getTimeInfo()) => {
+  if (!settings.enabled) return true;
+  if (isDate(settings.startDate) && isDate(settings.endDate)) {
+    if (info.date < settings.startDate || info.date > settings.endDate) return false;
+  }
+  return !!getSlotKey(settings, info, true);
+};
+
+const allowedMessage = (settings) => {
+  const dates = settings.startDate === settings.endDate
+    ? `on ${formatDate(settings.startDate)}`
+    : `from ${formatDate(settings.startDate)} to ${formatDate(settings.endDate)}`;
+  const slots = (settings.slots || [])
+    .filter(s => s.enabled)
+    .map(s => `${formatTime(s.start)}–${formatTime(s.end)}`)
+    .join(', ');
+  return `Scanning is only allowed ${dates}${slots ? `, ${slots}` : ''} (${TIMEZONE}).`;
+};
+
+const publicSettings = (doc) => {
+  const settings = normalizeSettings(doc);
+  return {
+    enabled: !!settings.enabled,
+    startDate: settings.startDate,
+    endDate: settings.endDate,
+    slots: cloneSlots(settings.slots),
+    timezone: TIMEZONE,
+    permissionMode: settings.permissionMode === 'everyone' ? 'everyone' : 'common-only',
+    permissions: settings.permissions || {},
+    updatedAt: doc && doc.updatedAt || null,
+  };
+};
 
 const Control = {
   username: USERNAME,
   timezone: TIMEZONE,
   formatDate,
+  formatTime,
   getTimeInfo,
+  getSlotKey,
   isWithinWindow,
+  allowedMessage,
 
   async verifyCredentials(username, password) {
     await ensureSeeded();
@@ -131,22 +213,29 @@ const Control = {
     await ensureSeeded();
     const db = getDb();
     const doc = await db.collection('scanSettings').findOne({ key: 'main' });
-    return { ...DEFAULT_SETTINGS, ...(doc || {}) };
+    return normalizeSettings(doc);
   },
 
   async updateSettings(patch) {
     await ensureSeeded();
     const current = await this.getSettings();
-    const next = { ...current };
+    const next = { ...current, slots: cloneSlots(current.slots) };
 
     if (typeof patch.enabled === 'boolean') next.enabled = patch.enabled;
-    if (typeof patch.date === 'string') {
-      next.date = /^\d{4}-\d{2}-\d{2}$/.test(patch.date) ? patch.date : '';
-    }
-    if (typeof patch.startTime === 'string' && toMinutes(patch.startTime) !== null) next.startTime = patch.startTime;
-    if (typeof patch.endTime === 'string' && toMinutes(patch.endTime) !== null) next.endTime = patch.endTime;
+    if (typeof patch.startDate === 'string' && isDate(patch.startDate)) next.startDate = patch.startDate;
+    if (typeof patch.endDate === 'string' && isDate(patch.endDate)) next.endDate = patch.endDate;
     if (patch.permissionMode === 'common-only' || patch.permissionMode === 'everyone') {
       next.permissionMode = patch.permissionMode;
+    }
+    if (Array.isArray(patch.slots)) {
+      for (const incoming of patch.slots) {
+        if (!incoming || !incoming.key) continue;
+        const slot = next.slots.find(s => s.key === incoming.key);
+        if (!slot) continue;
+        if (toMinutes(incoming.start) !== null) slot.start = incoming.start;
+        if (toMinutes(incoming.end) !== null) slot.end = incoming.end;
+        if (typeof incoming.enabled === 'boolean') slot.enabled = incoming.enabled;
+      }
     }
     if (patch.permissions && typeof patch.permissions === 'object' && !Array.isArray(patch.permissions)) {
       next.permissions = patch.permissions;

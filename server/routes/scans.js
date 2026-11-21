@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const middleware = require('../middleware/auth');
-const { Scan, getTimeSlot } = require('../models/Scan');
+const { Scan } = require('../models/Scan');
 const Control = require('../models/Control');
 
 const router = express.Router();
@@ -51,16 +51,23 @@ router.post('/', async (req, res) => {
       );
       if (!hasOverride) {
         return res.status(403).json({
-          error: `Scanning is only allowed on ${Control.formatDate(settings.date)} (${settings.startTime}–${settings.endTime} IST).`,
+          error: Control.allowedMessage(settings),
           code: 'SCAN_WINDOW_CLOSED',
-          allowed: { date: settings.date, startTime: settings.startTime, endTime: settings.endTime },
+          allowed: {
+            startDate: settings.startDate,
+            endDate: settings.endDate,
+            slots: settings.slots,
+            timezone: Control.timezone,
+          },
         });
       }
       windowWarning = 'Outside allowed scan window — admin override applied';
     }
 
-    const timeSlot = getTimeSlot();
-    const existing = await Scan.findByQrAndSlot(qrValue, scannedBy, timeSlot);
+    const scanDate = info.date;
+    const timeSlot = Control.getSlotKey(settings, info, true)
+      || Control.getSlotKey(settings, info, false);
+    const existing = await Scan.findByQrAndSlot(qrValue, scannedBy, timeSlot, scanDate);
     if (existing) {
       if (scannedBy === 'anonymous') {
         return res.json({
@@ -76,7 +83,7 @@ router.post('/', async (req, res) => {
         message: `Already scanned in ${timeSlot} today`,
       });
     }
-    const scan = await Scan.create({ qrValue, scannedBy });
+    const scan = await Scan.create({ qrValue, scannedBy, scanDate, timeSlot });
 
     const QR_APP_API = process.env.QR_APP_API_URL;
     if (QR_APP_API) {
