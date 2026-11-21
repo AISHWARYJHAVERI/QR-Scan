@@ -42,8 +42,18 @@ router.post('/sync-window', async (req, res) => {
     const { year, month } = todayParts();
     const startDate = `${year}-${month}-${pad(Math.min(...days))}`;
     const endDate = `${year}-${month}-${pad(Math.max(...days))}`;
-    const settings = await Control.updateSettings({ startDate, endDate });
-    res.json({ ok: true, startDate, endDate, timezone: TIMEZONE, settings });
+    const eventDates = days.map(d => `${year}-${month}-${pad(d)}`).sort();
+
+    // Send both the legacy range and the newer eventDates shape so this works
+    // with either version of Control.updateSettings.
+    const settings = await Control.updateSettings({
+      startDate,
+      endDate,
+      eventMonth: Number(month),
+      eventYear: Number(year),
+      eventDates,
+    });
+    res.json({ ok: true, startDate, endDate, eventDates, timezone: TIMEZONE, settings });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
