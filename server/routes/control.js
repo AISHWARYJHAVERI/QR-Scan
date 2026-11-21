@@ -23,8 +23,9 @@ router.get('/settings', requireControl, async (req, res) => {
     res.json({
       settings: {
         enabled: !!settings.enabled,
-        startDate: settings.startDate,
-        endDate: settings.endDate,
+        eventMonth: Number(settings.eventMonth),
+        eventYear: Number(settings.eventYear),
+        eventDates: settings.eventDates,
         slots: settings.slots,
         timezone: Control.timezone,
         permissionMode: settings.permissionMode || 'common-only',

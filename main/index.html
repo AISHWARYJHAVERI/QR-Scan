@@ -1584,7 +1584,7 @@
             } else {
                 const msg = err.error || err.message || 'Scan registration failed';
                 showToast(`✗ ${msg}`, 'error');
-                if ((err.code === 'SCAN_WINDOW_CLOSED' || err.code === 'QR_DATE_MISMATCH') && resultLabel) {
+                if (err.status === 403 && resultLabel) {
                     resultLabel.classList.add('window-error');
                     resultLabel.textContent = msg;
                     if (resultLabel === camQrResult) {

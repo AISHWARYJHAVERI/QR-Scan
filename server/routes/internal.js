@@ -28,21 +28,31 @@ router.post('/sync-window', async (req, res) => {
     return res.status(401).json({ error: 'Invalid sync key' });
   }
 
-  const days = Array.isArray(req.body && req.body.days)
-    ? req.body.days.map(Number)
+  const body = req.body || {};
+  const suppliedDates = Array.isArray(body.dates)
+    ? body.dates.map(value => Control.toIsoDate(value)).filter(Boolean)
     : [];
-  if (days.length !== 4 || days.some(n => Number.isNaN(n) || n < 1 || n > 31)) {
-    return res.status(400).json({ error: 'Provide 4 day numbers between 1 and 31.' });
+  const days = Array.isArray(body.days) ? body.days.map(Number) : [];
+
+  if (suppliedDates.length !== 4) {
+    if (days.length !== 4 || days.some(n => Number.isNaN(n) || n < 1 || n > 31)) {
+      return res.status(400).json({ error: 'Provide 4 dates (DD/MM/YYYY) or 4 day numbers (1–31).' });
+    }
   }
-  if (new Set(days).size !== 4) {
+  const values = suppliedDates.length === 4 ? suppliedDates : days;
+  if (new Set(values).size !== 4) {
     return res.status(400).json({ error: 'The 4 event dates must be different.' });
   }
 
   try {
-    const { year, month } = todayParts();
-    const startDate = `${year}-${month}-${pad(Math.min(...days))}`;
-    const endDate = `${year}-${month}-${pad(Math.max(...days))}`;
-    const eventDates = days.map(d => `${year}-${month}-${pad(d)}`).sort();
+    const today = todayParts();
+    const year = String(body.year || today.year);
+    const month = String(body.month || today.month);
+    const eventDates = (suppliedDates.length === 4
+      ? suppliedDates
+      : days.map(d => `${year}-${month}-${pad(d)}`)).sort();
+    const startDate = eventDates[0];
+    const endDate = eventDates[eventDates.length - 1];
 
     // Send both the legacy range and the newer eventDates shape so this works
     // with either version of Control.updateSettings.

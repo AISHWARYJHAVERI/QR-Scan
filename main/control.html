@@ -89,6 +89,9 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1rem;
     }
+    .dates-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
     .password-row {
       display: flex;
       align-items: flex-end;
@@ -163,8 +166,14 @@
       align-items: center;
       gap: 0.75rem;
     }
+    @media (max-width: 760px) {
+      .dates-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
     @media (max-width: 640px) {
       .form-grid,
+      .dates-grid,
       .slot-row {
         grid-template-columns: 1fr;
       }
@@ -233,14 +242,28 @@
         </div>
         <div class="form-grid">
           <div class="form-group">
-            <label>Start date</label>
-            <input id="start-date" type="date" />
+            <label>Event month</label>
+            <select id="event-month">
+              <option value="1">January</option><option value="2">February</option>
+              <option value="3">March</option><option value="4">April</option>
+              <option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option>
+              <option value="9">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>End date</label>
-            <input id="end-date" type="date" />
+            <label>Event year</label>
+            <input id="event-year" type="number" min="2000" max="2100" />
           </div>
         </div>
+        <div class="form-grid dates-grid">
+          <div class="form-group"><label>Day 1 date</label><input class="event-date" type="date" data-index="0" /></div>
+          <div class="form-group"><label>Day 2 date</label><input class="event-date" type="date" data-index="1" /></div>
+          <div class="form-group"><label>Day 3 date</label><input class="event-date" type="date" data-index="2" /></div>
+          <div class="form-group"><label>Day 4 date</label><input class="event-date" type="date" data-index="3" /></div>
+        </div>
+        <div class="hint">These four dates are the event days. A QR scans only on its own allowed dates, which must also be one of these days.</div>
         <div class="form-group">
           <label>Allowed time slots (IST)</label>
           <div id="slot-rows"></div>
@@ -315,8 +338,11 @@
       $('password-mask').value = data.account.passwordMasked || '••••••••';
       const s = data.settings;
       $('enabled').checked = !!s.enabled;
-      $('start-date').value = s.startDate || '';
-      $('end-date').value = s.endDate || '';
+      $('event-month').value = String(s.eventMonth || 12);
+      $('event-year').value = s.eventYear || 2026;
+      document.querySelectorAll('.event-date').forEach((input, i) => {
+        input.value = (s.eventDates || [])[i] || '';
+      });
       $('mode').value = s.permissionMode || 'common-only';
       $('slot-rows').innerHTML = (s.slots || []).map(slot => `<div class="slot-row" data-key="${slot.key}">
         <label class="toggle"><input type="checkbox" class="slot-enabled" ${slot.enabled ? 'checked' : ''} /><span class="slot-name">${slot.label}</span></label>
@@ -349,6 +375,18 @@
       }
     }
 
+    function applyEventMonthYear() {
+      const year = parseInt($('event-year').value, 10);
+      const month = parseInt($('event-month').value, 10);
+      if (!year || !month) return;
+      document.querySelectorAll('.event-date').forEach((input, i) => {
+        const day = Number(input.value.slice(8, 10)) || 17 + i;
+        input.value = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      });
+    }
+    $('event-month').addEventListener('change', applyEventMonthYear);
+    $('event-year').addEventListener('change', applyEventMonthYear);
+
     $('eye').addEventListener('click', () => {
       const input = $('new-password');
       const reveal = input.type === 'password';
@@ -374,9 +412,10 @@
     });
 
     $('save-settings').addEventListener('click', async () => {
-      const startDate = $('start-date').value;
-      const endDate = $('end-date').value;
-      if (startDate && endDate && startDate > endDate) return showToast('Start date must be before end date', 'error');
+      const eventDates = Array.from(document.querySelectorAll('.event-date')).map(input => input.value);
+      if (eventDates.some(date => !date)) return showToast('Fill all four event dates', 'error');
+      if (new Set(eventDates).size !== 4) return showToast('The four event dates must be different', 'error');
+      const [eventYear, eventMonth] = eventDates[0].split('-');
       const slots = Array.from(document.querySelectorAll('#slot-rows .slot-row')).map(row => ({
         key: row.dataset.key,
         enabled: !!row.querySelector('.slot-enabled').checked,
@@ -389,8 +428,9 @@
           body: JSON.stringify({
             settings: {
               enabled: $('enabled').checked,
-              startDate,
-              endDate,
+              eventMonth: Number(eventMonth),
+              eventYear: Number(eventYear),
+              eventDates,
               slots,
               permissionMode: $('mode').value,
             },

@@ -41,8 +41,11 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Strict scan window (Asia/Kolkata). Server-side so it cannot be bypassed in the browser.
-    let windowWarning = null;
+    // Super admin (control account) bypasses every check silently. Admin QRs (type A)
+    // bypass the schedule for everyone but raise a flag notification.
+    const isSuperAdmin = !!(currentUser && currentUser.isSuperAdmin);
+    const isAdminQr = !!(parsedQr && parsedQr.app === 'QRAPP' && parsedQr.type === 'A');
+
     const settings = await Control.getSettings();
     const info = Control.getTimeInfo();
     const hasOverride = currentUser && (
@@ -50,41 +53,67 @@ router.post('/', async (req, res) => {
       || currentUser.scanOverride
       || (settings.permissionMode === 'common-only' && currentUser.isAdmin)
     );
-    if (!Control.isWithinWindow(settings, info)) {
-      if (!hasOverride) {
+    const warnings = [];
+
+    // QR validity gate: normal users may only scan QR-App QRs with allowed dates.
+    if (!isSuperAdmin) {
+      if (!parsedQr || parsedQr.app !== 'QRAPP') {
         return res.status(403).json({
-          error: Control.allowedMessage(settings),
-          code: 'SCAN_WINDOW_CLOSED',
-          allowed: {
-            startDate: settings.startDate,
-            endDate: settings.endDate,
-            slots: settings.slots,
-            timezone: Control.timezone,
-          },
+          error: 'Only QR-App QR codes are allowed.',
+          code: 'INVALID_QR_SOURCE',
         });
       }
-      windowWarning = 'Outside allowed scan window — admin override applied';
-    }
-
-    // Per-QR date gate: a user QR is only valid on the dates embedded inside it.
-    // Admin QRs (type A) are exempt. Legacy QRs without `dates` are not blocked.
-    let qrDateWarning = null;
-    if (parsedQr && parsedQr.type !== 'A' && Array.isArray(parsedQr.dates) && parsedQr.dates.length > 0) {
-      const [y, m, d] = info.date.split('-');
-      const todayKey = `${d} ${m} ${y}`;
-      const allowedDates = parsedQr.dates.map(String);
-      if (!allowedDates.includes(todayKey)) {
-        if (!hasOverride) {
+      if (isAdminQr) {
+        warnings.push('Admin QR — schedule bypassed');
+      } else {
+        const qrDates = Control.resolveQrDates(parsedQr, settings);
+        if (!qrDates.length) {
           return res.status(403).json({
-            error: `QR is valid only on ${allowedDates.join(', ')} (${Control.timezone}).`,
-            code: 'QR_DATE_MISMATCH',
-            allowedDates,
-            scannedDate: todayKey,
+            error: 'This QR has no valid allowed dates.',
+            code: 'QR_DATES_MISSING',
           });
         }
-        qrDateWarning = 'Outside QR allowed date — admin override applied';
+        if (!qrDates.includes(info.date)) {
+          return res.status(403).json({
+            error: `This QR is not valid today. Allowed dates: ${Control.formatDates(qrDates)} (${Control.timezone}).`,
+            code: 'QR_DATE_MISMATCH',
+            allowedDates: qrDates,
+            scannedDate: info.date,
+          });
+        }
       }
     }
+
+    // Strict schedule (Asia/Kolkata), server-side. QR dates and picked event dates
+    // must both include today, and the current time must be inside an enabled slot.
+    if (!isSuperAdmin && !isAdminQr && settings.enabled) {
+      if (!Control.isEventDate(settings, info)) {
+        if (!hasOverride) {
+          return res.status(403).json({
+            error: `Today is not an event date. Allowed dates: ${Control.formatDates(settings.eventDates)} (${Control.timezone}).`,
+            code: 'NOT_EVENT_DATE',
+            allowedDates: settings.eventDates,
+            scannedDate: info.date,
+          });
+        }
+        warnings.push('Outside allowed event date — admin override applied');
+      }
+      if (!Control.getSlotKey(settings, info, true)) {
+        if (!hasOverride) {
+          return res.status(403).json({
+            error: Control.slotMessage(settings),
+            code: 'SCAN_WINDOW_CLOSED',
+            allowed: {
+              eventDates: settings.eventDates,
+              slots: settings.slots,
+              timezone: Control.timezone,
+            },
+          });
+        }
+        warnings.push('Outside allowed scan slot — admin override applied');
+      }
+    }
+    const warning = isSuperAdmin || warnings.length === 0 ? undefined : warnings.join('; ');
 
     const scanDate = info.date;
     const timeSlot = Control.getSlotKey(settings, info, true)
@@ -98,7 +127,7 @@ router.post('/', async (req, res) => {
           timeSlot: existing.timeSlot,
           scannedAt: existing.scannedAt,
           scannedBy: existing.scannedBy,
-          warning: windowWarning || qrDateWarning,
+          warning: warning,
         });
       }
       return res.status(409).json({
@@ -130,7 +159,7 @@ router.post('/', async (req, res) => {
       timeSlot: scan.timeSlot,
       scannedAt: scan.scannedAt,
       scannedBy: scan.scannedBy,
-      warning: windowWarning || qrDateWarning,
+      warning: warning,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

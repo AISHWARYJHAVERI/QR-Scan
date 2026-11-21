@@ -13,10 +13,13 @@ const DEFAULT_SLOTS = [
   { key: 'night', label: 'Night', start: '21:00', end: '23:00', enabled: true },
 ];
 
+const DEFAULT_EVENT_DATES = ['2026-12-17', '2026-12-18', '2026-12-19', '2026-12-20'];
+
 const DEFAULT_SETTINGS = {
   enabled: true,
-  startDate: '2026-11-21',
-  endDate: '2026-11-21',
+  eventMonth: 12,
+  eventYear: 2026,
+  eventDates: DEFAULT_EVENT_DATES,
   slots: DEFAULT_SLOTS,
   timezone: TIMEZONE,
   permissionMode: 'common-only',
@@ -24,6 +27,10 @@ const DEFAULT_SETTINGS = {
 };
 
 let seeded = false;
+
+function cloneSlots(slots) {
+  return slots.map(s => ({ ...s }));
+}
 
 async function ensureSeeded() {
   if (seeded) return;
@@ -34,6 +41,7 @@ async function ensureSeeded() {
       username: USERNAME,
       passwordHash: SEED_HASH,
       isAdmin: true,
+      isSuperAdmin: true,
       settingsAccess: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -41,34 +49,20 @@ async function ensureSeeded() {
   }
   const settings = db.collection('scanSettings');
   if (!(await settings.findOne({ key: 'main' }))) {
-    await settings.insertOne({ key: 'main', ...DEFAULT_SETTINGS, slots: cloneSlots(DEFAULT_SLOTS), updatedAt: new Date() });
+    await settings.insertOne({
+      key: 'main',
+      ...DEFAULT_SETTINGS,
+      eventDates: [...DEFAULT_EVENT_DATES],
+      slots: cloneSlots(DEFAULT_SLOTS),
+      updatedAt: new Date(),
+    });
   }
   seeded = true;
 }
 
-function cloneSlots(slots) {
-  return slots.map(s => ({ ...s }));
-}
-
-function normalizeSettings(doc) {
-  const base = { ...DEFAULT_SETTINGS, ...(doc || {}) };
-  const legacyDate = /^\d{4}-\d{2}-\d{2}$/.test(String(doc && doc.date || '')) ? doc.date : '';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(base.startDate || ''))) base.startDate = legacyDate || DEFAULT_SETTINGS.startDate;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(base.endDate || ''))) base.endDate = legacyDate || DEFAULT_SETTINGS.endDate;
-
-  const incoming = Array.isArray(base.slots) ? base.slots : [];
-  base.slots = DEFAULT_SLOTS.map((def) => {
-    const found = incoming.find(s => s && s.key === def.key) || {};
-    return {
-      key: def.key,
-      label: def.label,
-      start: toMinutes(found.start) !== null ? found.start : def.start,
-      end: toMinutes(found.end) !== null ? found.end : def.end,
-      enabled: typeof found.enabled === 'boolean' ? found.enabled : def.enabled,
-    };
-  });
-  return base;
-}
+const isDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+const isMonth = value => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 12;
+const isYear = value => Number.isInteger(Number(value)) && Number(value) >= 2000 && Number(value) <= 2100;
 
 const toMinutes = (value) => {
   const match = /^(\d{1,2}):(\d{2})$/.exec(String(value || ''));
@@ -79,7 +73,51 @@ const toMinutes = (value) => {
   return hours * 60 + minutes;
 };
 
-const isDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+function addDays(iso, days) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+function buildDateRange(start, end) {
+  const dates = [];
+  const limit = end >= start ? 4 : 1;
+  for (let i = 0; i < limit; i++) {
+    const candidate = addDays(start, i);
+    if (candidate > end) break;
+    dates.push(candidate);
+  }
+  return dates;
+}
+
+function normalizeSettings(doc) {
+  const base = { ...DEFAULT_SETTINGS, ...(doc || {}) };
+
+  const incomingSlots = Array.isArray(base.slots) ? base.slots : [];
+  base.slots = DEFAULT_SLOTS.map((def) => {
+    const found = incomingSlots.find(s => s && s.key === def.key) || {};
+    return {
+      key: def.key,
+      label: def.label,
+      start: toMinutes(found.start) !== null ? found.start : def.start,
+      end: toMinutes(found.end) !== null ? found.end : def.end,
+      enabled: typeof found.enabled === 'boolean' ? found.enabled : def.enabled,
+    };
+  });
+
+  let dates = Array.isArray(base.eventDates) ? base.eventDates.filter(isDate).slice(0, 4) : [];
+  if (dates.length === 0) {
+    const legacyStart = isDate(doc && doc.startDate) ? doc.startDate : (isDate(doc && doc.date) ? doc.date : '');
+    const legacyEnd = isDate(doc && doc.endDate) ? doc.endDate : legacyStart;
+    dates = legacyStart ? buildDateRange(legacyStart, legacyEnd) : [];
+  }
+  while (dates.length < 4) dates.push(dates[dates.length - 1] || DEFAULT_EVENT_DATES[dates.length]);
+  base.eventDates = dates.slice(0, 4);
+
+  if (!isMonth(base.eventMonth)) base.eventMonth = Number(base.eventDates[0].slice(5, 7));
+  if (!isYear(base.eventYear)) base.eventYear = Number(base.eventDates[0].slice(0, 4));
+  return base;
+}
 
 const formatDate = (value) => {
   if (!isDate(value)) return String(value || '');
@@ -96,6 +134,62 @@ const formatTime = (value) => {
   const suffix = hours24 >= 12 ? 'PM' : 'AM';
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   return `${hours12}:${mins} ${suffix}`;
+};
+
+const pad2 = n => String(n).padStart(2, '0');
+
+// Accepts DD/MM/YYYY, DD-MM-YYYY, "DD MM YYYY" and already-normalized YYYY-MM-DD.
+const toIsoDate = (value) => {
+  const text = String(value || '').trim();
+  if (isDate(text)) return text;
+  const match = /^(\d{1,2})[\/\-\s](\d{1,2})[\/\-\s](\d{4})$/.exec(text);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+};
+
+const formatDates = dates => (Array.isArray(dates) ? dates : []).map(formatDate).join(', ');
+
+// Resolves the dates a QR allows. `dates` holds full dates (e.g. "17/12/2026").
+// Legacy `days` holds day numbers (e.g. 17, 18) which map to the four control-page dates.
+const resolveQrDates = (qr, settings) => {
+  const result = [];
+  const push = (value) => {
+    const iso = toIsoDate(value);
+    if (iso && !result.includes(iso)) result.push(iso);
+  };
+  if (!qr || typeof qr !== 'object') return result;
+  if (Array.isArray(qr.dates)) qr.dates.forEach(push);
+
+  if (Array.isArray(qr.days)) {
+    const eventDates = Array.isArray(settings.eventDates) ? settings.eventDates : [];
+    qr.days.forEach((day, index) => {
+      const number = Number(day);
+      if (!Number.isFinite(number)) return;
+      // Prefer the picked date with the matching day-of-month; fall back to array order.
+      const byDay = eventDates.find(date => Number(date.slice(8, 10)) === number);
+      if (byDay) push(byDay);
+      else if (eventDates[index]) push(eventDates[index]);
+    });
+  }
+  return result;
+};
+
+const isEventDate = (settings, info = getTimeInfo()) => {
+  if (!settings.enabled) return true;
+  return Array.isArray(settings.eventDates)
+    && settings.eventDates.includes(info.date);
+};
+
+const slotMessage = (settings) => {
+  const slots = (settings.slots || [])
+    .filter(s => s.enabled)
+    .map(s => `${formatTime(s.start)}–${formatTime(s.end)}`)
+    .join(', ');
+  return `Scanning is only allowed during ${slots || 'the configured slots'} (${TIMEZONE}).`;
 };
 
 const getTimeInfo = () => {
@@ -127,14 +221,13 @@ const inTimeRange = (minutes, slot) => {
 };
 
 const getSlotKey = (settings, info = getTimeInfo(), respectEnabled = true) => {
-  if (respectEnabled && isDate(settings.startDate) && isDate(settings.endDate)) {
-    if (info.date < settings.startDate || info.date > settings.endDate) return null;
-  }
+  if (respectEnabled && Array.isArray(settings.eventDates) && settings.eventDates.length
+    && !settings.eventDates.includes(info.date)) return null;
   const slots = Array.isArray(settings.slots) ? settings.slots : [];
   const match = slots.find(s => (!respectEnabled || s.enabled) && inTimeRange(info.minutes, s));
   if (match) return match.key;
   if (respectEnabled) return null;
-  // Fallback for admin overrides outside every configured window.
+  // Fallback for bypasses outside every configured window.
   const minutes = info.minutes;
   if (minutes >= 9 * 60 && minutes < 13 * 60) return 'morning';
   if (minutes >= 13 * 60 && minutes < 17 * 60) return 'afternoon';
@@ -144,29 +237,27 @@ const getSlotKey = (settings, info = getTimeInfo(), respectEnabled = true) => {
 
 const isWithinWindow = (settings, info = getTimeInfo()) => {
   if (!settings.enabled) return true;
-  if (isDate(settings.startDate) && isDate(settings.endDate)) {
-    if (info.date < settings.startDate || info.date > settings.endDate) return false;
-  }
+  if (Array.isArray(settings.eventDates) && settings.eventDates.length
+    && !settings.eventDates.includes(info.date)) return false;
   return !!getSlotKey(settings, info, true);
 };
 
 const allowedMessage = (settings) => {
-  const dates = settings.startDate === settings.endDate
-    ? `on ${formatDate(settings.startDate)}`
-    : `from ${formatDate(settings.startDate)} to ${formatDate(settings.endDate)}`;
+  const dates = (settings.eventDates || []).map(formatDate).join(', ');
   const slots = (settings.slots || [])
     .filter(s => s.enabled)
     .map(s => `${formatTime(s.start)}–${formatTime(s.end)}`)
     .join(', ');
-  return `Scanning is only allowed ${dates}${slots ? `, ${slots}` : ''} (${TIMEZONE}).`;
+  return `Scanning is only allowed on ${dates}${slots ? `, ${slots}` : ''} (${TIMEZONE}).`;
 };
 
 const publicSettings = (doc) => {
   const settings = normalizeSettings(doc);
   return {
     enabled: !!settings.enabled,
-    startDate: settings.startDate,
-    endDate: settings.endDate,
+    eventMonth: Number(settings.eventMonth),
+    eventYear: Number(settings.eventYear),
+    eventDates: [...settings.eventDates],
     slots: cloneSlots(settings.slots),
     timezone: TIMEZONE,
     permissionMode: settings.permissionMode === 'everyone' ? 'everyone' : 'common-only',
@@ -179,11 +270,16 @@ const Control = {
   username: USERNAME,
   timezone: TIMEZONE,
   formatDate,
+  formatDates,
   formatTime,
+  toIsoDate,
+  resolveQrDates,
+  isEventDate,
   getTimeInfo,
   getSlotKey,
   isWithinWindow,
   allowedMessage,
+  slotMessage,
 
   async verifyCredentials(username, password) {
     await ensureSeeded();
@@ -196,7 +292,13 @@ const Control = {
 
   async getControlUser() {
     await ensureSeeded();
-    return { id: 'control', username: USERNAME, isAdmin: true, settingsAccess: true };
+    return {
+      id: 'control',
+      username: USERNAME,
+      isAdmin: true,
+      isSuperAdmin: true,
+      settingsAccess: true,
+    };
   },
 
   async setPassword(newPassword) {
@@ -219,11 +321,26 @@ const Control = {
   async updateSettings(patch) {
     await ensureSeeded();
     const current = await this.getSettings();
-    const next = { ...current, slots: cloneSlots(current.slots) };
+    const next = { ...current, slots: cloneSlots(current.slots), eventDates: [...current.eventDates] };
 
     if (typeof patch.enabled === 'boolean') next.enabled = patch.enabled;
-    if (typeof patch.startDate === 'string' && isDate(patch.startDate)) next.startDate = patch.startDate;
-    if (typeof patch.endDate === 'string' && isDate(patch.endDate)) next.endDate = patch.endDate;
+    if (isMonth(patch.eventMonth)) next.eventMonth = Number(patch.eventMonth);
+    if (isYear(patch.eventYear)) next.eventYear = Number(patch.eventYear);
+    if (Array.isArray(patch.eventDates)) {
+      const dates = patch.eventDates.filter(isDate).slice(0, 4);
+      if (dates.length) {
+        while (dates.length < 4) dates.push(dates[dates.length - 1]);
+        next.eventDates = dates;
+      }
+    } else if (isDate(patch.startDate) || isDate(patch.endDate)) {
+      const start = isDate(patch.startDate) ? patch.startDate : next.eventDates[0];
+      const end = isDate(patch.endDate) ? patch.endDate : start;
+      const generated = buildDateRange(start, end);
+      if (generated.length) {
+        while (generated.length < 4) generated.push(generated[generated.length - 1]);
+        next.eventDates = generated;
+      }
+    }
     if (patch.permissionMode === 'common-only' || patch.permissionMode === 'everyone') {
       next.permissionMode = patch.permissionMode;
     }
