@@ -1031,10 +1031,16 @@
 
     menuOverlay.addEventListener('click', closeMenu);
 
+    menuDropdownPopover.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
     menuItems.forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
             closeMenu();
             const targetId = item.getAttribute('data-target');
+            if (!targetId) return;
             menuItems.forEach(mi => mi.classList.remove('active'));
             item.classList.add('active');
             currentPageSection = targetId;
