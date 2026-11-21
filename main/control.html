@@ -65,6 +65,7 @@
     .modal-form .form-group select,
     .modal-form .form-group input {
       width: 100%;
+      color-scheme: dark;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
@@ -74,6 +75,11 @@
       font-family: inherit;
       outline: none;
       transition: border-color 0.2s, background 0.2s;
+    }
+    .modal-form .form-group select option,
+    select option {
+      background-color: #0d1730;
+      color: #f8fafc;
     }
     .modal-form .form-group select:focus,
     .modal-form .form-group input:focus {
