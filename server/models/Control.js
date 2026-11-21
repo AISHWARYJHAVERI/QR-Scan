@@ -178,6 +178,30 @@ const resolveQrDates = (qr, settings) => {
   return result;
 };
 
+// QR time ranges use "HH:mm-HH:mm" (24-hour, IST), e.g. "09:00-12:00".
+const resolveQrTimes = (qr) => {
+  const result = [];
+  if (!qr || typeof qr !== 'object' || !Array.isArray(qr.times)) return result;
+  for (const raw of qr.times) {
+    const match = /^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/.exec(String(raw || '').trim());
+    if (!match) continue;
+    const start = toMinutes(match[1]);
+    const end = toMinutes(match[2]);
+    if (start === null || end === null || start === end) continue;
+    if (!result.some(range => range.start === start && range.end === end)) {
+      result.push({ start, end });
+    }
+  }
+  return result;
+};
+
+const isWithinQrTimes = (qr, info = getTimeInfo()) => {
+  const minutes = info.minutes;
+  return resolveQrTimes(qr).some(({ start, end }) => (
+    end > start ? minutes >= start && minutes <= end : minutes >= start || minutes <= end
+  ));
+};
+
 const isEventDate = (settings, info = getTimeInfo()) => {
   if (!settings.enabled) return true;
   return Array.isArray(settings.eventDates)
@@ -274,6 +298,8 @@ const Control = {
   formatTime,
   toIsoDate,
   resolveQrDates,
+  resolveQrTimes,
+  isWithinQrTimes,
   isEventDate,
   getTimeInfo,
   getSlotKey,

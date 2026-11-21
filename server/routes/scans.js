@@ -81,6 +81,21 @@ router.post('/', async (req, res) => {
             scannedDate: info.date,
           });
         }
+        const qrTimes = Control.resolveQrTimes(parsedQr);
+        if (!qrTimes.length) {
+          return res.status(403).json({
+            error: 'This QR has no valid time slots.',
+            code: 'QR_TIMES_MISSING',
+          });
+        }
+        if (!Control.isWithinQrTimes(parsedQr, info)) {
+          return res.status(403).json({
+            error: `This QR is not valid at this time. Allowed times: ${(parsedQr.times || []).map(String).join(', ')} (${Control.timezone}).`,
+            code: 'QR_TIME_MISMATCH',
+            allowedTimes: parsedQr.times,
+            scannedTime: info.minutes,
+          });
+        }
       }
     }
 

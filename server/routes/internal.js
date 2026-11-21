@@ -44,6 +44,11 @@ router.post('/sync-window', async (req, res) => {
     return res.status(400).json({ error: 'The 4 event dates must be different.' });
   }
 
+  const times = Array.isArray(body.times) ? body.times.map(String) : [];
+  if (times.length && (times.length !== 4 || times.some(t => !/^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(t)))) {
+    return res.status(400).json({ error: 'Provide 4 time ranges in HH:mm-HH:mm format.' });
+  }
+
   try {
     const today = todayParts();
     const year = String(body.year || today.year);
@@ -54,16 +59,27 @@ router.post('/sync-window', async (req, res) => {
     const startDate = eventDates[0];
     const endDate = eventDates[eventDates.length - 1];
 
-    // Send both the legacy range and the newer eventDates shape so this works
-    // with either version of Control.updateSettings.
-    const settings = await Control.updateSettings({
+    const patch = {
       startDate,
       endDate,
       eventMonth: Number(month),
       eventYear: Number(year),
       eventDates,
-    });
-    res.json({ ok: true, startDate, endDate, eventDates, timezone: TIMEZONE, settings });
+    };
+    if (times.length === 4) {
+      const defs = [
+        { key: 'morning', label: 'Morning' },
+        { key: 'afternoon', label: 'Afternoon' },
+        { key: 'evening', label: 'Evening' },
+        { key: 'night', label: 'Night' },
+      ];
+      patch.slots = times.map((range, i) => {
+        const [start, end] = range.split(/\s*-\s*/);
+        return { ...defs[i], start, end, enabled: true };
+      });
+    }
+    const settings = await Control.updateSettings(patch);
+    res.json({ ok: true, startDate, endDate, eventDates, times, timezone: TIMEZONE, settings });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
